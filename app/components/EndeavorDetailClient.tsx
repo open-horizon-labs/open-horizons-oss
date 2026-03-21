@@ -8,6 +8,7 @@ import { MarkdownEditor } from './MarkdownEditor'
 import { CreateChildModal } from './CreateChildModal'
 import { ChangeParentModal } from './ChangeParentModal'
 import { getRoleIcon } from '../../lib/constants/icons'
+import { ActivityLog } from './ActivityLog'
 
 interface EndeavorDetailClientProps {
   node: GraphNode
@@ -525,6 +526,8 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
                 ) : null
               })()}
               
+              {!isNew && <ActivityLog endeavorId={node.id} />}
+
               {node.status && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
