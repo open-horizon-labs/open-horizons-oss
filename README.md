@@ -68,67 +68,11 @@ Mission > Aim > Initiative > Task
 Mission > Strategic Bet > Capability > Outcome Spec
 ```
 
-**Via API:**
-```bash
-# List current node types
-curl http://localhost:3000/api/node-types
-
-# Create or update a node type
-curl -X POST http://localhost:3000/api/node-types \
-  -H "Content-Type: application/json" \
-  -d '{"slug":"bet","name":"Bet","description":"A strategic wager","icon":"🎲","color":"#dc2626","valid_children":["capability"],"valid_parents":["mission"],"sort_order":1}'
-
-# Load a preset (atomic replace)
-curl -X POST http://localhost:3000/api/node-types/load-preset \
-  -H "Content-Type: application/json" \
-  -d '{"nodeTypes":[...]}'
-```
-
-The dashboard, lens filters, and child creation buttons all derive dynamically from the node types in the database. No restart required after changes.
+See [docs/node-types.md](docs/node-types.md) for API usage and custom type creation.
 
 ## API
 
-### REST Endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/dashboard` | Full graph for the dashboard |
-| GET | `/api/endeavors/:id` | Get a single endeavor |
-| POST | `/api/endeavors/create` | Create an endeavor |
-| PATCH | `/api/endeavors/:id` | Update an endeavor |
-| DELETE | `/api/endeavors/:id` | Delete an endeavor |
-| GET/POST | `/api/edges` | List or create edges |
-| GET/POST | `/api/contexts` | List or create contexts |
-| GET/POST/DELETE | `/api/node-types` | Manage node type hierarchy |
-| POST | `/api/node-types/load-preset` | Atomic preset replacement |
-| GET/POST | `/api/metis` | List or create metis entries (patterns/insights) |
-| GET/POST | `/api/guardrails` | List or create guardrails (constraints/rules) |
-| GET/POST | `/api/candidates` | List or create candidates (proposed metis/guardrails) |
-| POST | `/api/candidates/:id/promote` | Promote a candidate to metis or guardrail |
-| POST | `/api/candidates/:id/reject` | Reject a candidate |
-| GET | `/api/endeavors/:id/extensions` | Get metis + guardrails for an endeavor |
-| GET | `/api/status` | Health check |
-
-### MCP (JSON-RPC)
-
-`POST /api/mcp` accepts JSON-RPC 2.0 requests. Available methods:
-
-- `list_endeavors` -- List endeavors with optional filters (`context_id`, `node_type`, `limit`).
-- `get_endeavor` -- Get an endeavor and its children by `id`.
-- `get_tree` -- Get the full tree for a `context_id`.
-- `search_endeavors` -- Full-text search by `query`.
-- `list_metis` -- List metis entries for an `endeavor_id`.
-- `list_guardrails` -- List guardrails for an `endeavor_id`.
-- `create_candidate` -- Create a candidate with `endeavor_id`, `type`, and `content`.
-- `get_extensions` -- Get metis + guardrails for an `endeavor_id`.
-
-Example:
-
-```bash
-curl -X POST http://localhost:3000/api/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"get_tree","params":{"context_id":"default"}}'
-```
+Full REST and MCP endpoint reference: [docs/mcp-setup.md](docs/mcp-setup.md)
 
 ### Using with oh-mcp-server
 
