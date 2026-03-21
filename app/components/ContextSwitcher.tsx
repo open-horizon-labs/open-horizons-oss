@@ -67,6 +67,17 @@ export function ContextSwitcher({ currentUserId, onContextChange }: ContextSwitc
         }
 
         setSelectedContext(contextToSet)
+
+        // Notify downstream components of auto-selected context without navigating.
+        // Navigation via router.push should only happen on explicit user action
+        // (dropdown change) to avoid redirecting away from the current page.
+        if (contextToSet) {
+          onContextChange?.(contextToSet)
+          const event = new CustomEvent('contextChanged', {
+            detail: { contextId: contextToSet }
+          })
+          window.dispatchEvent(event)
+        }
       } catch (error) {
         console.error('Failed to load data:', error)
       } finally {
