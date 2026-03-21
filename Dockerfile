@@ -21,7 +21,11 @@ RUN pnpm --filter @oh/ui build
 
 # Build the Next.js app
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+
+ARG GIT_SHA=unknown
+ENV NEXT_PUBLIC_GIT_SHA=$GIT_SHA
+
+RUN NEXT_PUBLIC_APP_VERSION=$(node -p "require('./package.json').version") pnpm build
 
 # Stage 3: Production runner
 FROM node:22-alpine AS runner
