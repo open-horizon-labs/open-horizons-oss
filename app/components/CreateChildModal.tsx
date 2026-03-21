@@ -29,22 +29,17 @@ export function CreateChildModal({
   const [selectedParentId, setSelectedParentId] = useState(currentParent?.id || '')
   const config = getActiveConfig()
 
-  // Guard: don't compute anything if childType is not set
-  if (!childType || !isOpen) {
-    return null
-  }
-
-  // Resolve display name from config
-  const childTypeConfig = config.nodeTypes.find(nt => nt.name === childType || nt.slug === childType)
-  const displayTypeName = childTypeConfig?.name || childType
+  // Resolve display name from config (safe even if childType is undefined)
+  const childTypeConfig = childType ? config.nodeTypes.find(nt => nt.name === childType || nt.slug === childType) : undefined
+  const displayTypeName = childTypeConfig?.name || childType || ''
 
   // Get potential parents using the config-driven hierarchy
-  const getPotentialParents = () => {
-    const validParentTypes = getValidParentTypes(childType)
-    return allNodes.filter(node => node.node_type && validParentTypes.includes(node.node_type))
-  }
-
-  const potentialParents = getPotentialParents()
+  const potentialParents = childType
+    ? allNodes.filter(node => {
+        const validParentTypes = getValidParentTypes(childType)
+        return node.node_type && validParentTypes.includes(node.node_type)
+      })
+    : []
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
@@ -59,7 +54,7 @@ export function CreateChildModal({
     onClose()
   }, [currentParent.id, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !childType) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -120,6 +120,33 @@ curl -X POST http://localhost:3000/api/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"get_tree","params":{"context_id":"default"}}'
 ```
 
+### Using with oh-mcp-server
+
+The [oh-mcp-server](https://github.com/open-horizon-labs/oh-mcp-server) connects AI agents (Claude, etc.) to your strategy graph via MCP stdio transport. Point it at your local instance:
+
+```bash
+OH_API_URL=http://localhost:3000 OH_API_KEY=dummy npx oh-mcp-server
+```
+
+No real API key is needed -- the OSS version has no authentication. Any non-empty string works as `OH_API_KEY` (the MCP server requires it on startup but the app ignores it).
+
+For Claude Desktop, add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "open-horizons": {
+      "command": "npx",
+      "args": ["oh-mcp-server"],
+      "env": {
+        "OH_API_URL": "http://localhost:3000",
+        "OH_API_KEY": "dummy"
+      }
+    }
+  }
+}
+```
+
 ## Development
 
 ```bash
