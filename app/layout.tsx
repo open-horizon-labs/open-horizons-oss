@@ -8,8 +8,8 @@ import { GlobalContextAwareProvider } from './components/GlobalContextAwareProvi
 import { QuickNav } from './components/QuickNav'
 
 export const metadata: Metadata = {
-  title: 'Open Horizons — App',
-  description: 'Daily Review — Aim. Do. Reflect.'
+  title: 'Open Horizons',
+  description: 'Strategy graph for aims and initiatives'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -20,6 +20,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       name: 'Contexts',
       href: '/settings/contexts',
       icon: 'C'
+    },
+    {
+      name: 'Import Data',
+      href: '/settings/markdown-aims',
+      icon: 'I'
     }
   ]
 

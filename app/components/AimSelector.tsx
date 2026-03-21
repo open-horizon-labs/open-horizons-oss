@@ -21,7 +21,7 @@ export function AimSelector({ aims, selectedAims, onSelectAim }: AimSelectorProp
           No Aims defined yet. Create your first Aim to link today&apos;s work.
         </p>
         <Link
-          href={`/artifacts/aim:${Date.now()}?type=Aim`}
+          href={`/endeavor/aim:${Date.now()}?type=Aim`}
           className="inline-block px-3 py-1 rounded border bg-white hover:bg-gray-50 text-sm"
         >
           Create First Aim
@@ -35,7 +35,7 @@ export function AimSelector({ aims, selectedAims, onSelectAim }: AimSelectorProp
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold">Link to Aims</h2>
         <Link
-          href={`/artifacts/aim:${Date.now()}?type=Aim`}
+          href={`/endeavor/aim:${Date.now()}?type=Aim`}
           className="px-2 py-1 rounded border text-sm bg-white hover:bg-gray-50"
         >
           New Aim
@@ -90,13 +90,13 @@ export function AimSelector({ aims, selectedAims, onSelectAim }: AimSelectorProp
                 
                 <div className="flex gap-1">
                   <Link
-                    href={`/artifacts/${aim.id}?type=Aim`}
+                    href={`/endeavor/${aim.id}?type=Aim`}
                     className="px-2 py-1 rounded border text-xs bg-white hover:bg-gray-50"
                   >
                     Edit
                   </Link>
                   <Link
-                    href={`/artifacts/initiative:${Date.now()}?type=Initiative&parent=${aim.id}`}
+                    href={`/endeavor/initiative:${Date.now()}?type=Initiative&parent=${aim.id}`}
                     className="px-2 py-1 rounded border text-xs bg-white hover:bg-gray-50"
                   >
                     + Initiative

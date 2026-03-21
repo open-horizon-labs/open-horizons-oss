@@ -9,7 +9,6 @@ type NodeType = UserNodeType
 import { filterNodesByType, consumeGraphNodes } from '../../lib/contracts/ui-helpers'
 import { LensFilter, LensPresetBar } from './LensFilter'
 import { NodeTypeChip } from './NodeTypeChips'
-import { TaskManager } from './TaskManager'
 import { getRoleIcon } from '../../lib/constants/icons'
 import { getEndeavorLink, navigateToEndeavor } from '../../lib/utils/endeavor-links'
 import { createContextAwareNode } from '../../lib/ui/breadcrumb-utils'
@@ -148,8 +147,11 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
 
 
   // Filter nodes based on selected types and hierarchy focus
+  // Always exclude Task nodes from the strategy graph view
   const filteredNodes = useMemo(() => {
-    let filtered = nodes
+    let filtered = nodes.filter(node =>
+      node.node_type?.toLowerCase() !== 'task'
+    )
 
     // First apply hierarchy focus if set
     if (hierarchyFocus) {
@@ -381,7 +383,7 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Missions - Always show as drop zone */}
+          {/* Missions */}
           <NodeSection
             title="Missions"
             nodes={missions}
@@ -395,12 +397,11 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
             setIsDragging={setIsDragging}
             toast={toast}
             onDataChange={onDataChange}
-            supportsTaskManagement={true}
             contextId={contextId}
             openCreateModal={openCreateModal}
           />
 
-          {/* Aims - Always show as drop zone */}
+          {/* Aims */}
           <NodeSection
             title="Aims"
             nodes={aims}
@@ -414,12 +415,11 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
             setIsDragging={setIsDragging}
             toast={toast}
             onDataChange={onDataChange}
-            supportsTaskManagement={true}
             contextId={contextId}
             openCreateModal={openCreateModal}
           />
 
-          {/* Initiatives - Always show as drop zone */}
+          {/* Initiatives */}
           <NodeSection
             title="Initiatives"
             nodes={initiatives}
@@ -433,7 +433,6 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
             setIsDragging={setIsDragging}
             toast={toast}
             onDataChange={onDataChange}
-            supportsTaskManagement={true}
             contextId={contextId}
             openCreateModal={openCreateModal}
           />
@@ -475,12 +474,11 @@ interface NodeSectionProps {
   setIsDragging: (isDragging: boolean) => void
   toast: React.RefObject<Toast | null>
   onDataChange?: () => void
-  supportsTaskManagement?: boolean
   contextId?: string
   openCreateModal: (type: NodeType, defaultParentId?: string) => void
 }
 
-function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarchyFocus, loading, setLoading, isDragging, setIsDragging, toast, onDataChange, supportsTaskManagement = false, contextId, openCreateModal }: NodeSectionProps) {
+function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarchyFocus, loading, setLoading, isDragging, setIsDragging, toast, onDataChange, contextId, openCreateModal }: NodeSectionProps) {
   return (
     <div>
       <div className="group flex items-center justify-between mb-3">
@@ -531,52 +529,6 @@ function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarch
             <div
               key={node.id}
               className="relative border rounded-lg p-4 bg-white hover:border-gray-300 transition-colors"
-              {...(supportsTaskManagement && {
-                onDragOver: (e) => {
-                  e.preventDefault()
-                  e.dataTransfer.dropEffect = 'move'
-                  e.currentTarget.classList.add('border-blue-400', 'bg-blue-50', 'ring-2', 'ring-blue-200')
-                  e.currentTarget.classList.remove('border-gray-200', 'bg-white')
-                },
-                onDragLeave: (e) => {
-                  e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50', 'ring-2', 'ring-blue-200')
-                  e.currentTarget.classList.add('border-gray-200', 'bg-white')
-                },
-                onDrop: async (e) => {
-                  e.preventDefault()
-                  e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50', 'ring-2', 'ring-blue-200')
-                  e.currentTarget.classList.add('border-gray-200', 'bg-white')
-
-                  const draggedTaskId = e.dataTransfer.getData('text/plain')
-                  if (draggedTaskId) {
-                    setLoading(true)
-                    try {
-                      const response = await fetch(`/api/endeavors/${encodeURIComponent(draggedTaskId)}/parent`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ parentId: node.id })
-                      })
-
-                      if (!response.ok) {
-                        const error = await response.json()
-                        throw new Error(error.error || 'Failed to assign task')
-                      }
-
-                      onDataChange?.() // Refresh to show updated hierarchy
-                    } catch (error) {
-                      console.error('Failed to assign task:', error)
-                      toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Failed to assign task: ' + (error instanceof Error ? error.message : String(error)),
-                        life: 3000
-                      })
-                    } finally {
-                      setLoading(false)
-                    }
-                  }
-                }
-              })}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
@@ -647,150 +599,25 @@ function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarch
                 </div>
               </div>
 
+              {/* Show non-task children as badges */}
               {(() => {
-                // Separate task and non-task children
-                const taskChildren = children.filter(child => child.node_type === DatabaseNodeType.enum.Task)
                 const nonTaskChildren = children.filter(child => child.node_type !== DatabaseNodeType.enum.Task)
-
-                return (
-                  <>
-                    {/* Show non-task children as badges FIRST */}
-                    {nonTaskChildren.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-gray-100">
-                        <div className="flex flex-wrap gap-2">
-                          {nonTaskChildren.map(child => (
-                            <div
-                              key={child.id}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 transition-all hover:bg-gray-200 cursor-pointer"
-                              {...(supportsTaskManagement && {
-                                onDragOver: (e) => {
-                                  e.preventDefault()
-                                  e.dataTransfer.dropEffect = 'move'
-                                  e.currentTarget.classList.add('bg-blue-100', 'ring-2', 'ring-blue-300', 'text-blue-800')
-                                  e.currentTarget.classList.remove('bg-gray-100')
-                                },
-                                onDragLeave: (e) => {
-                                  e.currentTarget.classList.remove('bg-blue-100', 'ring-2', 'ring-blue-300', 'text-blue-800')
-                                  e.currentTarget.classList.add('bg-gray-100')
-                                },
-                                onDrop: async (e) => {
-                                  e.preventDefault()
-                                  e.currentTarget.classList.remove('bg-blue-100', 'ring-2', 'ring-blue-300', 'text-blue-800')
-                                  e.currentTarget.classList.add('bg-gray-100')
-
-                                  const draggedTaskId = e.dataTransfer.getData('text/plain')
-                                  if (draggedTaskId) {
-                                    setLoading(true)
-                                    try {
-                                      const response = await fetch(`/api/endeavors/${encodeURIComponent(draggedTaskId)}/parent`, {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ parentId: child.id })
-                                      })
-
-                                      if (!response.ok) {
-                                        const error = await response.json()
-                                        throw new Error(error.error || 'Failed to move task')
-                                      }
-
-                                      onDataChange?.() // Refresh to show updated hierarchy
-                                    } catch (error) {
-                                      console.error('Failed to move task:', error)
-                                      toast.current?.show({
-                                        severity: 'error',
-                                        summary: 'Error',
-                                        detail: 'Failed to move task: ' + (error instanceof Error ? error.message : String(error)),
-                                        life: 3000
-                                      })
-                                    } finally {
-                                      setLoading(false)
-                                    }
-                                  }
-                                }
-                              })}
-                              title={`${child.description ? `${child.title || child.id}: ${child.description}` : child.title || child.id}${supportsTaskManagement ? ' (Drop tasks here to assign them)' : ''}`}
-                            >
-                              <span className="cursor-default">
-                                {child.title || child.id}
-                              </span>
-                              <Link
-                                href={`/daily/${today}?context=${child.id}`}
-                                className="text-blue-600 hover:text-blue-800"
-                                title="Edit daily log with this context"
-                                onClick={(e) => e.stopPropagation()} // Prevent chip click when clicking link
-                              >
-                                📝
-                              </Link>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Show task management - AFTER non-task children */}
-                    {supportsTaskManagement && (
-                      <div className="mt-3 pt-2 border-t border-gray-100">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-sm text-gray-600">
-                            Tasks ({taskChildren.length})
-                          </div>
-                          <button
-                            onClick={async () => {
-                              // Optimistic update - immediately refresh to show new task
-                              onDataChange?.()
-
-                              try {
-                                const response = await fetch('/api/endeavors/create', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    title: 'New Task',
-                                    type: 'task',
-                                    parentId: node.id,
-                                    contextId: contextId
-                                  })
-                                })
-
-                                if (!response.ok) {
-                                  const error = await response.json()
-                                  throw new Error(error.error || 'Failed to create task')
-                                }
-
-                                // Refresh again to get the real task data
-                                onDataChange?.()
-                              } catch (error) {
-                                console.error('Failed to create task:', error)
-                                toast.current?.show({
-                                  severity: 'error',
-                                  summary: 'Error',
-                                  detail: 'Failed to create task: ' + (error instanceof Error ? error.message : String(error)),
-                                  life: 3000
-                                })
-                                // Refresh to revert optimistic update
-                                onDataChange?.()
-                              }
-                            }}
-                            className="text-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 w-8 h-8 flex items-center justify-center rounded"
-                            title="Add task"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <TaskManager
-                          taskId={node.id}
-                          allNodes={allNodes}
-                          date={today}
-                          loading={loading}
-                          setLoading={setLoading}
-                          compact={true}
-                          onDataChange={onDataChange}
-                          setIsDragging={setIsDragging}
-                          hideAddButton={true}
-                        />
-                      </div>
-                    )}
-                  </>
-                )
+                return nonTaskChildren.length > 0 ? (
+                  <div className="mt-3 pt-2 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2">
+                      {nonTaskChildren.map(child => (
+                        <Link
+                          key={child.id}
+                          href={getEndeavorLink(child.id, today)}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 transition-all hover:bg-gray-200 cursor-pointer"
+                          title={child.description ? `${child.title || child.id}: ${child.description}` : child.title || child.id}
+                        >
+                          <span>{child.title || child.id}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : null
               })()}
             </div>
           )
