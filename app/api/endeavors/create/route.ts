@@ -1,33 +1,37 @@
 import { NextRequest } from 'next/server'
 import { withAuth, AuthenticatedUser } from '../../../../lib/auth-api'
-import {
-  validateCreateEndeavorRequestWithContext,
-  validateCreateEndeavorResponse,
-  transformToDatabase,
-  ContractViolationError
-} from '../../../../lib/contracts/endeavor-contract'
 import { query, queryOne, getClient } from '../../../../lib/db'
 
 export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUser, authMethod: 'session' | 'api_key') => {
   try {
     const requestBody = await request.json()
 
-    let validatedInput
-    try {
-      validatedInput = validateCreateEndeavorRequestWithContext(requestBody, user.id)
-    } catch (error) {
-      if (error instanceof ContractViolationError) {
-        return Response.json({
-          error: 'Contract violation: Request validation failed',
-          details: error.message,
-          issues: error.zodError.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message,
-            ...(('received' in issue) && { received: issue.received })
-          }))
-        }, { status: 400 })
-      }
-      throw error
+    // Validate request fields
+    const { title, type, contextId, parentId } = requestBody
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return Response.json({ error: 'Title is required' }, { status: 400 })
+    }
+    if (!type || typeof type !== 'string') {
+      return Response.json({ error: 'Type is required' }, { status: 400 })
+    }
+
+    // Validate type against DB node_types table (not config cache)
+    const validType = await queryOne(
+      'SELECT slug, name FROM node_types WHERE slug = $1 OR LOWER(name) = LOWER($1)',
+      [type]
+    )
+    if (!validType) {
+      const allTypes = await query('SELECT slug FROM node_types ORDER BY sort_order')
+      return Response.json({
+        error: `Invalid node type "${type}". Valid types: ${allTypes.map((t: any) => t.slug).join(', ')}`
+      }, { status: 400 })
+    }
+
+    const validatedInput = {
+      title: title.trim(),
+      type: validType.slug,
+      contextId: contextId || null,
+      parentId: parentId || null
     }
 
     // Determine effective contextId - inherit from parent if not explicitly provided
@@ -66,20 +70,22 @@ export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUse
       return Response.json({ error: 'Parent not available in target context' }, { status: 400 })
     }
 
-    const dbRecord = transformToDatabase(validatedInput, user.id, resolvedContextId)
+    // Build DB record
+    const endeavorId = crypto.randomUUID()
+    const dbNodeType = validType.name // Use the canonical DB name
 
     const client = await getClient()
     try {
       await client.query('BEGIN')
       await client.query(
         'INSERT INTO endeavors (id, context_id, title, description, status, node_type, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [dbRecord.id, dbRecord.context_id, dbRecord.title, dbRecord.description, dbRecord.status, dbRecord.node_type, '{}']
+        [endeavorId, resolvedContextId, validatedInput.title, '', 'active', dbNodeType, '{}']
       )
 
       if (validatedInput.parentId) {
         await client.query(
           'INSERT INTO edges (from_endeavor_id, to_endeavor_id, relationship) VALUES ($1, $2, $3)',
-          [validatedInput.parentId, dbRecord.id, 'contains']
+          [validatedInput.parentId, endeavorId, 'contains']
         )
       }
 
@@ -94,19 +100,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUse
     const { revalidatePath } = await import('next/cache')
     revalidatePath('/dashboard')
 
-    const responseData = { success: true as const, endeavorId: dbRecord.id }
-    try {
-      const validatedResponse = validateCreateEndeavorResponse(responseData)
-      return Response.json(validatedResponse)
-    } catch (error) {
-      if (error instanceof ContractViolationError) {
-        return Response.json({
-          error: 'Internal contract violation: Response format invalid',
-          details: error.message
-        }, { status: 500 })
-      }
-      throw error
-    }
+    return Response.json({ success: true, endeavorId })
   } catch (error: any) {
     if (error?.name === 'ZodError') {
       return Response.json({
