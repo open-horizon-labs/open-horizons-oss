@@ -101,6 +101,12 @@ The dashboard, lens filters, and child creation buttons all derive dynamically f
 | GET/POST | `/api/contexts` | List or create contexts |
 | GET/POST/DELETE | `/api/node-types` | Manage node type hierarchy |
 | POST | `/api/node-types/load-preset` | Atomic preset replacement |
+| GET/POST | `/api/metis` | List or create metis entries (patterns/insights) |
+| GET/POST | `/api/guardrails` | List or create guardrails (constraints/rules) |
+| GET/POST | `/api/candidates` | List or create candidates (proposed metis/guardrails) |
+| POST | `/api/candidates/:id/promote` | Promote a candidate to metis or guardrail |
+| POST | `/api/candidates/:id/reject` | Reject a candidate |
+| GET | `/api/endeavors/:id/extensions` | Get metis + guardrails for an endeavor |
 | GET | `/api/status` | Health check |
 
 ### MCP (JSON-RPC)
@@ -111,6 +117,10 @@ The dashboard, lens filters, and child creation buttons all derive dynamically f
 - `get_endeavor` -- Get an endeavor and its children by `id`.
 - `get_tree` -- Get the full tree for a `context_id`.
 - `search_endeavors` -- Full-text search by `query`.
+- `list_metis` -- List metis entries for an `endeavor_id`.
+- `list_guardrails` -- List guardrails for an `endeavor_id`.
+- `create_candidate` -- Create a candidate with `endeavor_id`, `type`, and `content`.
+- `get_extensions` -- Get metis + guardrails for an `endeavor_id`.
 
 Example:
 

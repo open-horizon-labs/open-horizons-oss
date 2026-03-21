@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser } from '../../../lib/auth-api'
-import { query, queryOne } from '../../../lib/db'
+import { query, queryOne, executeReturning } from '../../../lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,6 +173,60 @@ class MethodError extends Error {
   }
 }
 
+async function listMetis(params: Record<string, unknown>, userId: string) {
+  const endeavorId = params.endeavor_id as string
+  if (!endeavorId) throw new MethodError(-32602, 'Missing required param: endeavor_id')
+
+  const data = await query(
+    'SELECT id, endeavor_id, content, type, created_at, updated_at FROM metis_entries WHERE endeavor_id = $1 ORDER BY created_at DESC',
+    [endeavorId]
+  )
+  return { metis: data }
+}
+
+async function listGuardrails(params: Record<string, unknown>, userId: string) {
+  const endeavorId = params.endeavor_id as string
+  if (!endeavorId) throw new MethodError(-32602, 'Missing required param: endeavor_id')
+
+  const data = await query(
+    'SELECT id, endeavor_id, content, created_at, updated_at FROM guardrails WHERE endeavor_id = $1 ORDER BY created_at DESC',
+    [endeavorId]
+  )
+  return { guardrails: data }
+}
+
+async function createCandidate(params: Record<string, unknown>, userId: string) {
+  const endeavorId = params.endeavor_id as string
+  const type = (params.type as string) || 'metis'
+  const content = params.content as string
+
+  if (!endeavorId) throw new MethodError(-32602, 'Missing required param: endeavor_id')
+  if (!content) throw new MethodError(-32602, 'Missing required param: content')
+
+  const rows = await executeReturning(
+    'INSERT INTO candidates (endeavor_id, type, content) VALUES ($1, $2, $3) RETURNING id, endeavor_id, type, content, status, promoted_to_id, created_at, updated_at',
+    [endeavorId, type, content]
+  )
+  return { candidate: rows[0] }
+}
+
+async function getExtensions(params: Record<string, unknown>, userId: string) {
+  const endeavorId = params.endeavor_id as string
+  if (!endeavorId) throw new MethodError(-32602, 'Missing required param: endeavor_id')
+
+  const metis = await query(
+    'SELECT id, endeavor_id, content, type, created_at, updated_at FROM metis_entries WHERE endeavor_id = $1 ORDER BY created_at DESC',
+    [endeavorId]
+  )
+
+  const guardrails = await query(
+    'SELECT id, endeavor_id, content, created_at, updated_at FROM guardrails WHERE endeavor_id = $1 ORDER BY created_at DESC',
+    [endeavorId]
+  )
+
+  return { metis, guardrails }
+}
+
 const METHODS: Record<
   string,
   (params: Record<string, unknown>, userId: string) => Promise<unknown>
@@ -181,6 +235,10 @@ const METHODS: Record<
   get_endeavor: getEndeavor,
   get_tree: getTree,
   search_endeavors: searchEndeavors,
+  list_metis: listMetis,
+  list_guardrails: listGuardrails,
+  create_candidate: createCandidate,
+  get_extensions: getExtensions,
 }
 
 export const POST = withAuth(async (

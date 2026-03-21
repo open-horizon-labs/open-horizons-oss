@@ -84,3 +84,43 @@ CREATE OR REPLACE TRIGGER endeavors_updated_at
 CREATE OR REPLACE TRIGGER node_types_updated_at
   BEFORE UPDATE ON node_types
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Metis: patterns, insights, and learnings (human-curated)
+CREATE TABLE IF NOT EXISTS metis_entries (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  endeavor_id TEXT REFERENCES endeavors(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'pattern',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Guardrails: constraints and rules
+CREATE TABLE IF NOT EXISTS guardrails (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  endeavor_id TEXT REFERENCES endeavors(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Candidates: proposed metis/guardrails from agents, awaiting human review
+CREATE TABLE IF NOT EXISTS candidates (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  endeavor_id TEXT REFERENCES endeavors(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'metis',
+  content TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  promoted_to_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_metis_endeavor ON metis_entries(endeavor_id);
+CREATE INDEX IF NOT EXISTS idx_guardrails_endeavor ON guardrails(endeavor_id);
+CREATE INDEX IF NOT EXISTS idx_candidates_endeavor ON candidates(endeavor_id);
+CREATE INDEX IF NOT EXISTS idx_candidates_status ON candidates(status);
+
+CREATE OR REPLACE TRIGGER metis_updated_at BEFORE UPDATE ON metis_entries FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE OR REPLACE TRIGGER guardrails_updated_at BEFORE UPDATE ON guardrails FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE OR REPLACE TRIGGER candidates_updated_at BEFORE UPDATE ON candidates FOR EACH ROW EXECUTE FUNCTION update_updated_at();
