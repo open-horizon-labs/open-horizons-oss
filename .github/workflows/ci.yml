@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build-and-unit-tests:
     name: Build & Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-cached
 
     steps:
       - name: Checkout
@@ -41,7 +41,7 @@ jobs:
 
   api-tests:
     name: API Tests
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-cached
 
     services:
       postgres:
