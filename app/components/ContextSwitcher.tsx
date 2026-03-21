@@ -56,6 +56,15 @@ export function ContextSwitcher({ currentUserId, onContextChange }: ContextSwitc
         const savedContextId = localStorage.getItem('selectedContextId')
         let contextToSet = savedContextId && savedContextId !== 'null' ? savedContextId : null
 
+        // Validate saved context still exists
+        if (contextToSet && contextsData?.contexts) {
+          const exists = contextsData.contexts.some((ctx: any) => ctx.id === contextToSet)
+          if (!exists) {
+            contextToSet = null
+            localStorage.removeItem('selectedContextId')
+          }
+        }
+
         // If no context is selected, default to personal context if available
         if (!contextToSet && contextsData?.contexts && contextsData.contexts.length > 0) {
           const personalContext = contextsData.contexts.find((ctx: any) => ctx.id.startsWith('personal:'))

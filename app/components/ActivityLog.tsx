@@ -33,7 +33,10 @@ export function ActivityLog({ endeavorId }: ActivityLogProps) {
         const response = await fetch(`/api/logs?${params}`)
         if (response.ok) {
           const data = await response.json()
-          setLogs(data.logs || [])
+          const sorted = (data.logs || []).sort((a: LogEntry, b: LogEntry) =>
+            new Date(b.log_date).getTime() - new Date(a.log_date).getTime()
+          )
+          setLogs(sorted)
         }
       } catch (error) {
         console.error('Failed to fetch logs:', error)
@@ -65,7 +68,7 @@ export function ActivityLog({ endeavorId }: ActivityLogProps) {
               <time dateTime={log.log_date}>
                 {new Date(log.log_date).toLocaleDateString()}
               </time>
-              {log.content_type && log.content_type !== 'markdown' && (
+              {log.content_type && (
                 <span className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
                   {log.content_type}
                 </span>
