@@ -6,11 +6,17 @@ export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser
   try {
     const { searchParams } = new URL(request.url)
     const contextId = searchParams.get('contextId') || 'default'
+    const includeArchived = searchParams.get('include_archived') === 'true'
 
-    const endeavors = await query(
-      'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
-      [contextId]
-    )
+    const endeavors = includeArchived
+      ? await query(
+          'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
+          [contextId]
+        )
+      : await query(
+          'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 AND status != $2 ORDER BY created_at DESC',
+          [contextId, 'archived']
+        )
 
     // Get all edges for parent_id computation
     const endeavorIds = endeavors.map(e => e.id)

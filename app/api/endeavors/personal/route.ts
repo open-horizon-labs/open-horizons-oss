@@ -4,10 +4,18 @@ import { query } from '../../../../lib/db'
 
 export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser) => {
   try {
-    const endeavors = await query(
-      'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
-      ['default']
-    )
+    const { searchParams } = new URL(request.url)
+    const includeArchived = searchParams.get('include_archived') === 'true'
+
+    const endeavors = includeArchived
+      ? await query(
+          'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
+          ['default']
+        )
+      : await query(
+          'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 AND status != $2 ORDER BY created_at DESC',
+          ['default', 'archived']
+        )
 
     const endeavorIds = endeavors.map(e => e.id)
     let edges: any[] = []
