@@ -1,59 +1,33 @@
 /**
- * Server-side context validation utilities
- * This file contains server-only functions that require supabase and personal-context imports
+ * Server-side context validation utilities -- simplified for standalone Postgres
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { getPersonalContextId, ensurePersonalContext } from '../contexts/personal-context'
+import { queryOne, query } from '../db'
 
 /**
- * Comprehensive context validation and resolution that prevents FK violations
- * This function catches context issues BEFORE database insertion
+ * Validate and resolve context ID.
+ * Ensures the context exists, creates 'default' if needed.
  */
 export async function validateAndResolveContext(
   contextId: string | null | undefined,
   authenticatedUserId: string,
-  supabase: SupabaseClient
+  supabase?: any
 ): Promise<{ success: true; contextId: string } | { success: false; error: string }> {
   try {
-    let resolvedContextId: string
+    const resolvedContextId = contextId || 'default'
 
-    if (!contextId || contextId === 'personal') {
-      // Null/undefined/personal -> resolve to user's personal context
-      const personalResult = await ensurePersonalContext(authenticatedUserId, supabase)
-      if (!personalResult.success) {
-        return { success: false, error: `Failed to ensure personal context: ${personalResult.error}` }
-      }
-      resolvedContextId = personalResult.contextId
-    } else if (contextId.startsWith('personal:')) {
-      // Personal context format -> validate it matches the user
-      const contextUserId = contextId.replace('personal:', '')
-      if (contextUserId !== authenticatedUserId) {
-        return {
-          success: false,
-          error: `Personal context ID mismatch: '${contextId}' does not match authenticated user '${authenticatedUserId}'. This indicates a session/authentication bug.`
-        }
-      }
+    const existing = await queryOne('SELECT id FROM contexts WHERE id = $1', [resolvedContextId])
 
-      // Ensure the personal context exists
-      const personalResult = await ensurePersonalContext(authenticatedUserId, supabase)
-      if (!personalResult.success) {
-        return { success: false, error: `Failed to ensure personal context: ${personalResult.error}` }
+    if (!existing) {
+      // Auto-create the default context if it does not exist
+      if (resolvedContextId === 'default') {
+        await query(
+          'INSERT INTO contexts (id, title, description) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING',
+          ['default', 'Default Context', 'Your personal workspace for organizing endeavors']
+        )
+        return { success: true, contextId: resolvedContextId }
       }
-      resolvedContextId = personalResult.contextId
-    } else {
-      // Regular context -> validate it exists and user has access
-      const { data: context, error } = await supabase
-        .from('contexts')
-        .select('id')
-        .eq('id', contextId)
-        .single()
-
-      if (error || !context) {
-        return { success: false, error: `Context '${contextId}' does not exist or you don't have access to it` }
-      }
-
-      resolvedContextId = contextId
+      return { success: false, error: `Context '${resolvedContextId}' does not exist` }
     }
 
     return { success: true, contextId: resolvedContextId }

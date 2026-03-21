@@ -1,29 +1,20 @@
-import { supabaseServer } from '../../../lib/supabaseServer'
 import { ContextsManager } from './ContextsManager'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ContextsSettingsPage() {
-  const supabase = await supabaseServer()
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return <div>Please sign in</div>
-  }
+  const userId = process.env.DEFAULT_USER_ID || 'default-user'
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Collaboration Contexts</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Contexts</h2>
         <p className="text-gray-600">
-          Contexts are collaboration spaces where you can share specific endeavors with others.
-          Each context isolates shared work from your personal workspace.
+          Contexts are workspaces for organizing endeavors.
         </p>
       </div>
 
-      <ContextsManager userId={user.id} />
+      <ContextsManager userId={userId} />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser } from '../../../lib/auth-api'
+import { query, queryOne, executeReturning } from '../../../lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,20 +13,15 @@ interface CreateEdgeRequest {
   metadata?: Record<string, unknown>
 }
 
-// Create a new edge
 export const POST = withAuth(async (
   req: NextRequest,
   user: AuthenticatedUser,
   authMethod
 ) => {
   try {
-    const { getSupabaseForAuthMethod } = await import('../../../lib/supabaseForAuth')
-    const supabase = await getSupabaseForAuthMethod(authMethod, user.id)
-
     const body = await req.json() as CreateEdgeRequest
     const { fromEndeavorId, toEndeavorId, relationship, weight, context, metadata } = body
 
-    // Validate required fields
     if (!fromEndeavorId || !toEndeavorId || !relationship) {
       return NextResponse.json(
         { error: 'fromEndeavorId, toEndeavorId, and relationship are required' },
@@ -33,7 +29,6 @@ export const POST = withAuth(async (
       )
     }
 
-    // Reject self-referencing edges
     if (fromEndeavorId === toEndeavorId) {
       return NextResponse.json(
         { error: 'Cannot create edge to self' },
@@ -41,87 +36,48 @@ export const POST = withAuth(async (
       )
     }
 
-    // Verify user has access to both endeavors
-    const { data: fromEndeavor, error: fromError } = await supabase
-      .from('endeavors')
-      .select('id')
-      .eq('id', fromEndeavorId)
-      .single()
-
-    if (fromError || !fromEndeavor) {
-      return NextResponse.json(
-        { error: 'From endeavor not found or not accessible' },
-        { status: 404 }
-      )
+    // Verify both endeavors exist
+    const fromEndeavor = await queryOne('SELECT id FROM endeavors WHERE id = $1', [fromEndeavorId])
+    if (!fromEndeavor) {
+      return NextResponse.json({ error: 'From endeavor not found or not accessible' }, { status: 404 })
     }
 
-    const { data: toEndeavor, error: toError } = await supabase
-      .from('endeavors')
-      .select('id')
-      .eq('id', toEndeavorId)
-      .single()
-
-    if (toError || !toEndeavor) {
-      return NextResponse.json(
-        { error: 'To endeavor not found or not accessible' },
-        { status: 404 }
-      )
+    const toEndeavor = await queryOne('SELECT id FROM endeavors WHERE id = $1', [toEndeavorId])
+    if (!toEndeavor) {
+      return NextResponse.json({ error: 'To endeavor not found or not accessible' }, { status: 404 })
     }
 
-    // Create the edge
-    const { data: edge, error: insertError } = await supabase
-      .from('edges')
-      .insert({
-        from_endeavor_id: fromEndeavorId,
-        to_endeavor_id: toEndeavorId,
-        relationship,
-        weight: weight ?? 1.0,
-        context: context ?? null,
-        metadata: metadata ?? {},
-        created_by: user.id
-      })
-      .select()
-      .single()
+    try {
+      const rows = await executeReturning(
+        `INSERT INTO edges (from_endeavor_id, to_endeavor_id, relationship, weight, context, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [fromEndeavorId, toEndeavorId, relationship, weight ?? 1.0, context ?? null, JSON.stringify(metadata ?? {})]
+      )
 
-    if (insertError) {
-      console.error('Failed to create edge:', insertError)
-
-      // Handle unique constraint violation
-      if (insertError.code === '23505') {
-        return NextResponse.json(
-          { error: 'Edge already exists' },
-          { status: 409 }
-        )
+      return NextResponse.json({ edge: rows[0] }, { status: 201 })
+    } catch (error: any) {
+      if (error?.code === '23505') {
+        return NextResponse.json({ error: 'Edge already exists' }, { status: 409 })
       }
-
-      return NextResponse.json(
-        { error: 'Failed to create edge' },
-        { status: 500 }
-      )
+      throw error
     }
-
-    return NextResponse.json({ edge }, { status: 201 })
-
   } catch (error) {
     console.error('Edge creation error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 })
 
-// Query edges
 export const GET = withAuth(async (
   req: NextRequest,
   user: AuthenticatedUser,
   authMethod
 ) => {
   try {
-    const { getSupabaseForAuthMethod } = await import('../../../lib/supabaseForAuth')
-    const supabase = await getSupabaseForAuthMethod(authMethod, user.id)
-
     const { searchParams } = new URL(req.url)
     const endeavorId = searchParams.get('endeavorId')
     const relationship = searchParams.get('relationship')
-    const direction = searchParams.get('direction') // 'incoming', 'outgoing', or null for both
+    const direction = searchParams.get('direction')
 
     if (!endeavorId) {
       return NextResponse.json(
@@ -130,31 +86,31 @@ export const GET = withAuth(async (
       )
     }
 
-    // Build query based on direction
-    let query = supabase.from('edges').select('*')
+    let sql = 'SELECT * FROM edges WHERE '
+    const params: any[] = []
+    let paramIdx = 1
 
     if (direction === 'incoming') {
-      query = query.eq('to_endeavor_id', endeavorId)
+      sql += `to_endeavor_id = $${paramIdx++}`
+      params.push(endeavorId)
     } else if (direction === 'outgoing') {
-      query = query.eq('from_endeavor_id', endeavorId)
+      sql += `from_endeavor_id = $${paramIdx++}`
+      params.push(endeavorId)
     } else {
-      // Both directions
-      query = query.or(`from_endeavor_id.eq.${endeavorId},to_endeavor_id.eq.${endeavorId}`)
+      sql += `(from_endeavor_id = $${paramIdx++} OR to_endeavor_id = $${paramIdx++})`
+      params.push(endeavorId, endeavorId)
     }
 
     if (relationship) {
-      query = query.eq('relationship', relationship)
+      sql += ` AND relationship = $${paramIdx++}`
+      params.push(relationship)
     }
 
-    const { data: edges, error } = await query.order('created_at', { ascending: false })
+    sql += ' ORDER BY created_at DESC'
 
-    if (error) {
-      console.error('Failed to query edges:', error)
-      return NextResponse.json({ error: 'Failed to query edges' }, { status: 500 })
-    }
+    const edges = await query(sql, params)
 
-    return NextResponse.json({ edges: edges || [] })
-
+    return NextResponse.json({ edges })
   } catch (error) {
     console.error('Edge query error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

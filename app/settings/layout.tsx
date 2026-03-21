@@ -14,27 +14,12 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
     {
       name: 'General',
       href: '/settings',
-      icon: '⚙️'
-    },
-    {
-      name: 'Integrations',
-      href: '/settings/integrations',
-      icon: '🔗'
+      icon: 'G'
     },
     {
       name: 'Contexts',
       href: '/settings/contexts',
-      icon: '👥'
-    },
-    {
-      name: 'API Keys',
-      href: '/settings/api-keys',
-      icon: '🔑'
-    },
-    {
-      name: 'Import Data',
-      href: '/settings/markdown-aims',
-      icon: '📄'
+      icon: 'C'
     }
   ]
 

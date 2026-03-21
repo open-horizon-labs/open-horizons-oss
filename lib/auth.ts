@@ -1,10 +1,11 @@
-import { supabaseServer } from './supabaseServer'
+/**
+ * Auth utilities -- simplified for standalone Postgres.
+ * No session management needed.
+ */
 
 export async function getUserFromSession() {
-  const supabase = await supabaseServer()
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
-
-  return user
+  return {
+    id: process.env.DEFAULT_USER_ID || 'default-user',
+    email: process.env.DEFAULT_USER_EMAIL || 'user@localhost',
+  }
 }

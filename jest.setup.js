@@ -18,15 +18,17 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
-// Mock Supabase
-jest.mock('./lib/supabaseClient', () => ({
-  supabaseClient: () => ({
-    auth: {
-      signInWithOtp: jest.fn().mockResolvedValue({ error: null }),
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
-    },
+// Mock db module for unit tests
+jest.mock('./lib/db', () => ({
+  query: jest.fn().mockResolvedValue([]),
+  queryOne: jest.fn().mockResolvedValue(null),
+  execute: jest.fn().mockResolvedValue(0),
+  executeReturning: jest.fn().mockResolvedValue([]),
+  getClient: jest.fn().mockResolvedValue({
+    query: jest.fn(),
+    release: jest.fn(),
   }),
+  getPool: jest.fn(),
 }))
 
 // Mock window.location

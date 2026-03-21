@@ -1,103 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser } from '../../../../lib/auth-api'
-import { validateSuccessResponse } from '../../../../lib/contracts/endeavor-contract'
+import { query, queryOne, execute } from '../../../../lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// Check if ID looks like a full UUID vs short prefix
 function isFullId(id: string): boolean {
-  // Full UUIDs are 36 chars with dashes, or various prefixed formats
   return id.length > 16 || id.includes(':') || id.includes('-')
 }
 
-// Get a single endeavor by ID (supports short prefix matching like git)
 export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser, authMethod: 'session' | 'api_key', { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params
     const endeavorId = decodeURIComponent(id)
 
-    const { getSupabaseForAuthMethod } = await import('../../../../lib/supabaseForAuth')
-    const supabase = await getSupabaseForAuthMethod(authMethod, user.id)
-
-    let endeavor, fetchError
+    let endeavor: any
 
     if (isFullId(endeavorId)) {
-      // Exact match for full IDs
-      const result = await supabase
-        .from('endeavors')
-        .select(`
-          id,
-          title,
-          description,
-          status,
-          context_id,
-          node_type,
-          created_at,
-          updated_at,
-          metadata
-        `)
-        .eq('id', endeavorId)
-        .single()
-      endeavor = result.data
-      fetchError = result.error
+      endeavor = await queryOne(
+        'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE id = $1',
+        [endeavorId]
+      )
     } else {
-      // Prefix match for short IDs (git-style)
-      const result = await supabase
-        .from('endeavors')
-        .select(`
-          id,
-          title,
-          description,
-          status,
-          context_id,
-          node_type,
-          created_at,
-          updated_at,
-          metadata
-        `)
-        .ilike('id', `${endeavorId}%`)
-        .limit(2) // Get 2 to detect ambiguity
+      const matches = await query(
+        'SELECT id, title, description, status, context_id, node_type, created_at, updated_at, metadata FROM endeavors WHERE id ILIKE $1 LIMIT 2',
+        [`${endeavorId}%`]
+      )
 
-      if (result.data && result.data.length === 1) {
-        endeavor = result.data[0]
-      } else if (result.data && result.data.length > 1) {
-        // Ambiguous - multiple matches
+      if (matches.length > 1) {
         return NextResponse.json({
           error: 'Ambiguous short ID - matches multiple endeavors',
-          matches: result.data.map(e => ({ id: e.id, title: e.title }))
+          matches: matches.map(e => ({ id: e.id, title: e.title }))
         }, { status: 400 })
-      } else if (!result.data || result.data.length === 0) {
-        // No matches found
-        return NextResponse.json({ error: 'Endeavor not found' }, { status: 404 })
       }
-      fetchError = result.error
+
+      endeavor = matches[0] || null
     }
 
-    if (fetchError) {
-      console.error('Failed to fetch endeavor:', fetchError)
-      if (fetchError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Endeavor not found' }, { status: 404 })
-      }
-      return NextResponse.json({ error: 'Failed to fetch endeavor' }, { status: 500 })
+    if (!endeavor) {
+      return NextResponse.json({ error: 'Endeavor not found' }, { status: 404 })
     }
 
-    // Compute parent_id from edges (unified graph model)
-    let parentId: string | null = null
-    if (endeavor) {
-      const { data: parentEdge } = await supabase
-        .from('edges')
-        .select('from_endeavor_id')
-        .eq('to_endeavor_id', endeavor.id)
-        .eq('relationship', 'contains')
-        .single()
-
-      parentId = parentEdge?.from_endeavor_id || null
-    }
+    // Compute parent_id from edges
+    const parentEdge = await queryOne<{ from_endeavor_id: string }>(
+      'SELECT from_endeavor_id FROM edges WHERE to_endeavor_id = $1 AND relationship = $2',
+      [endeavor.id, 'contains']
+    )
 
     return NextResponse.json({
       endeavor: {
         ...endeavor,
-        parent_id: parentId
+        parent_id: parentEdge?.from_endeavor_id || null
       }
     })
   } catch (error) {
@@ -106,7 +58,6 @@ export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser
   }
 })
 
-// Delete an endeavor and all its associated data
 export const DELETE = withAuth(async (
   req: NextRequest,
   user: AuthenticatedUser,
@@ -117,39 +68,21 @@ export const DELETE = withAuth(async (
     const { id } = await context.params
     const endeavorId = decodeURIComponent(id)
 
-    const { getSupabaseForAuthMethod } = await import('../../../../lib/supabaseForAuth')
-    const supabase = await getSupabaseForAuthMethod(authMethod, user.id)
+    const endeavor = await queryOne<{ id: string; title: string }>(
+      'SELECT id, title FROM endeavors WHERE id = $1',
+      [endeavorId]
+    )
 
-    // Verify endeavor exists and belongs to user
-    const { data: endeavor, error: fetchError } = await supabase
-      .from('endeavors')
-      .select('id, title')
-      .eq('id', endeavorId)
-      .eq('created_by', user.id)
-      .single()
-
-    if (fetchError || !endeavor) {
+    if (!endeavor) {
       return NextResponse.json({ error: 'Endeavor not found' }, { status: 404 })
     }
 
-    // Delete the endeavor directly
-    const { error: deleteError } = await supabase
-      .from('endeavors')
-      .delete()
-      .eq('id', endeavorId)
-      .eq('created_by', user.id)
+    await execute('DELETE FROM endeavors WHERE id = $1', [endeavorId])
 
-    if (deleteError) {
-      console.error('Failed to delete endeavor:', deleteError)
-      return NextResponse.json({ error: 'Failed to delete endeavor' }, { status: 500 })
-    }
-
-    const response = validateSuccessResponse({
+    return NextResponse.json({
       success: true,
       message: `Endeavor "${endeavor.title || endeavorId}" has been permanently deleted`
     })
-    return NextResponse.json(response)
-
   } catch (error) {
     console.error('Delete endpoint error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -1,38 +1,34 @@
-import { supabaseServer } from '../../lib/supabaseServer'
+import { query } from '../../lib/db'
 import { ContextAwareDataProvider } from './ContextAwareDataProvider'
 
 export async function GlobalContextAwareProvider({ children }: { children: React.ReactNode }) {
-  const supabase = await supabaseServer()
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+  const userId = process.env.DEFAULT_USER_ID || 'default-user'
 
-  if (!user) {
-    return <>{children}</>
+  // Load nodes from default context
+  let endeavors: any[] = []
+  try {
+    endeavors = await query(
+      'SELECT * FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
+      ['default']
+    )
+  } catch {
+    // DB may not be ready yet
   }
 
-  // Load nodes directly using contract format
-  const { data: endeavors } = await supabase
-    .from('endeavors')
-    .select('*')
-    .eq('context_id', `personal:${user.id}`)
-    .is('archived_at', null)
-
-  // Convert to modern format (components expect GraphNode with correct field names)
-  const nodes = (endeavors || []).map(endeavor => ({
+  const nodes = endeavors.map(endeavor => ({
     id: endeavor.id,
     node_type: endeavor.node_type?.toLowerCase() || 'task',
-    parent_id: endeavor.parent_id,
+    parent_id: endeavor.parent_id || null,
     title: endeavor.title,
     description: endeavor.description || '',
     status: endeavor.status,
     metadata: endeavor.metadata || {},
     created_at: endeavor.created_at,
-    archived_at: endeavor.archived_at
+    archived_at: null
   })) as any[]
 
   return (
-    <ContextAwareDataProvider initialNodes={nodes} userId={user.id}>
+    <ContextAwareDataProvider initialNodes={nodes} userId={userId}>
       {children}
     </ContextAwareDataProvider>
   )

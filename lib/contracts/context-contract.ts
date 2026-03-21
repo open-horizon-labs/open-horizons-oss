@@ -52,10 +52,8 @@ export const ContextNode = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().optional(),
-  created_by: z.string(),
   created_at: z.string(),
-  is_owner: z.boolean(),
-  ui_config: z.record(z.string(), z.unknown()).optional()
+  is_owner: z.boolean().optional(),
 })
 export type ContextNode = z.infer<typeof ContextNode>
 
