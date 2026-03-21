@@ -36,10 +36,15 @@ function jsonrpcError(
 // ---- Method handlers ----
 
 async function listEndeavors(params: Record<string, unknown>, userId: string) {
+  const includeArchived = params.include_archived === true
   let sql = 'SELECT id, title, description, status, node_type, context_id, created_at, updated_at, metadata FROM endeavors WHERE 1=1'
   const sqlParams: any[] = []
   let idx = 1
 
+  if (!includeArchived) {
+    sql += ` AND status != $${idx++}`
+    sqlParams.push('archived')
+  }
   if (params.context_id) {
     sql += ` AND context_id = $${idx++}`
     sqlParams.push(params.context_id)
@@ -100,11 +105,17 @@ async function getEndeavor(params: Record<string, unknown>, userId: string) {
 async function getTree(params: Record<string, unknown>, userId: string) {
   const contextId = params.context_id as string
   if (!contextId) throw new MethodError(-32602, 'Missing required param: context_id')
+  const includeArchived = params.include_archived === true
 
-  const endeavors = await query(
-    'SELECT id, title, description, status, node_type, context_id, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
-    [contextId]
-  )
+  const endeavors = includeArchived
+    ? await query(
+        'SELECT id, title, description, status, node_type, context_id, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 ORDER BY created_at DESC',
+        [contextId]
+      )
+    : await query(
+        'SELECT id, title, description, status, node_type, context_id, created_at, updated_at, metadata FROM endeavors WHERE context_id = $1 AND status != $2 ORDER BY created_at DESC',
+        [contextId, 'archived']
+      )
 
   const nodeIds = endeavors.map((e: any) => e.id)
 
@@ -145,12 +156,17 @@ async function getTree(params: Record<string, unknown>, userId: string) {
 async function searchEndeavors(params: Record<string, unknown>, userId: string) {
   const q = params.query as string
   if (!q) throw new MethodError(-32602, 'Missing required param: query')
+  const includeArchived = params.include_archived === true
 
   const limit = typeof params.limit === 'number' ? params.limit : 20
   const sqlParams: any[] = [`%${q}%`, `%${q}%`]
   let sql = 'SELECT id, title, description, status, node_type, context_id, created_at, updated_at, metadata FROM endeavors WHERE (title ILIKE $1 OR description ILIKE $2)'
   let idx = 3
 
+  if (!includeArchived) {
+    sql += ` AND status != $${idx++}`
+    sqlParams.push('archived')
+  }
   if (params.context_id) {
     sql += ` AND context_id = $${idx++}`
     sqlParams.push(params.context_id)
