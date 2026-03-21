@@ -4,6 +4,15 @@
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Updated_at trigger function (must be defined before tables that use it)
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Contexts: workspaces that contain endeavors
 CREATE TABLE IF NOT EXISTS contexts (
   id TEXT PRIMARY KEY,
@@ -13,7 +22,7 @@ CREATE TABLE IF NOT EXISTS contexts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Endeavors: nodes in the hierarchy (Mission > Aim > Initiative > Task)
+-- Endeavors: nodes in the strategy graph
 CREATE TABLE IF NOT EXISTS endeavors (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   context_id TEXT NOT NULL REFERENCES contexts(id) ON DELETE CASCADE,
@@ -40,7 +49,22 @@ CREATE TABLE IF NOT EXISTS edges (
   CONSTRAINT edges_unique_relationship UNIQUE (from_endeavor_id, to_endeavor_id, relationship)
 );
 
--- Indexes for common query patterns
+-- Node types: configurable strategy hierarchy (managed via Settings > Node Types UI)
+CREATE TABLE IF NOT EXISTS node_types (
+  slug TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  icon TEXT DEFAULT '📄',
+  color TEXT DEFAULT '#6b7280',
+  chip_classes TEXT DEFAULT 'bg-gray-100 text-gray-800 border-gray-200',
+  valid_children TEXT[] DEFAULT '{}',
+  valid_parents TEXT[] DEFAULT '{}',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes
 CREATE INDEX IF NOT EXISTS idx_endeavors_context_id ON endeavors(context_id);
 CREATE INDEX IF NOT EXISTS idx_endeavors_node_type ON endeavors(node_type);
 CREATE INDEX IF NOT EXISTS idx_endeavors_status ON endeavors(status);
@@ -48,19 +72,15 @@ CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_endeavor_id);
 CREATE INDEX IF NOT EXISTS idx_edges_to ON edges(to_endeavor_id);
 CREATE INDEX IF NOT EXISTS idx_edges_relationship ON edges(relationship);
 
--- Updated_at trigger
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Triggers
+CREATE OR REPLACE TRIGGER contexts_updated_at
+  BEFORE UPDATE ON contexts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE OR REPLACE TRIGGER endeavors_updated_at
   BEFORE UPDATE ON endeavors
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
-CREATE OR REPLACE TRIGGER contexts_updated_at
-  BEFORE UPDATE ON contexts
+CREATE OR REPLACE TRIGGER node_types_updated_at
+  BEFORE UPDATE ON node_types
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();

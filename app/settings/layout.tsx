@@ -22,6 +22,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       icon: 'C'
     },
     {
+      name: 'Node Types',
+      href: '/settings/node-types',
+      icon: 'N'
+    },
+    {
       name: 'Import Data',
       href: '/settings/markdown-aims',
       icon: 'I'

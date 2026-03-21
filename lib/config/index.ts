@@ -1,15 +1,13 @@
 /**
- * Strategy Configuration Entry Point
+ * Strategy Configuration
  *
- * Reads STRATEGY_PRESET from environment (or defaults to "open-horizons")
- * and returns the active configuration.
+ * On the server: reads from node_types DB table via getActiveConfigAsync()
+ * On the client: uses built-in presets (or cached data from server props)
  *
- * Usage:
- *   import { getActiveConfig } from '../config'
- *   const config = getActiveConfig()
+ * The config module itself never imports db.ts to stay client-safe.
  */
 
-import { StrategyConfig } from './node-types'
+import { StrategyConfig, NodeTypeConfig } from './node-types'
 import { openHorizonsConfig } from './presets/open-horizons'
 import { agenticFlowConfig } from './presets/agentic-flow'
 
@@ -27,40 +25,61 @@ export {
   getRootTypes
 } from './node-types'
 
-/** Registry of all available presets */
+/** Built-in presets (used as fallback and for icon lookup) */
 export const PRESETS: Record<string, StrategyConfig> = {
   'open-horizons': openHorizonsConfig,
   'agentic-flow': agenticFlowConfig
 }
 
-/** Default preset ID when none is specified */
-const DEFAULT_PRESET = 'open-horizons'
+// In-memory cache (populated by server-side getActiveConfigAsync)
+let _cachedConfig: StrategyConfig | null = null
 
-/**
- * Get the active strategy configuration.
- *
- * Reads from `STRATEGY_PRESET` environment variable.
- * Falls back to "open-horizons" if unset or invalid.
- */
-export function getActiveConfig(): StrategyConfig {
+/** Set the active config (called by server components after DB read) */
+export function setActiveConfig(config: StrategyConfig) {
+  _cachedConfig = config
+}
+
+/** Invalidate the cache (call after writing node_types) */
+export function invalidateNodeTypeCache() {
+  _cachedConfig = null
+}
+
+/** Synchronously get preset config from env */
+function getPresetConfig(): StrategyConfig {
   const presetId = (
     typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_STRATEGY_PRESET || process.env?.STRATEGY_PRESET)
-  ) || DEFAULT_PRESET
-
-  const config = PRESETS[presetId]
-  if (!config) {
-    console.warn(
-      `Unknown STRATEGY_PRESET "${presetId}", falling back to "${DEFAULT_PRESET}". ` +
-      `Available presets: ${Object.keys(PRESETS).join(', ')}`
-    )
-    return PRESETS[DEFAULT_PRESET]
-  }
-
-  return config
+  ) || 'open-horizons'
+  return PRESETS[presetId] || PRESETS['open-horizons']
 }
 
 /**
- * List available preset IDs (useful for settings UI or CLI)
+ * Get the active strategy configuration (synchronous).
+ * Returns cached DB config if available, otherwise falls back to env preset.
+ */
+export function getActiveConfig(): StrategyConfig {
+  return _cachedConfig || getPresetConfig()
+}
+
+/**
+ * Convert DB rows to StrategyConfig.
+ * Used by server components and API routes that query node_types directly.
+ */
+export function rowsToConfig(rows: any[]): StrategyConfig {
+  const nodeTypes: NodeTypeConfig[] = rows.map((row: any) => ({
+    name: row.name,
+    slug: row.slug,
+    description: row.description || '',
+    color: row.color || '#6b7280',
+    icon: row.icon || '📄',
+    chipClasses: row.chip_classes || 'bg-gray-100 text-gray-800 border-gray-200',
+    validChildren: row.valid_children || [],
+    validParents: row.valid_parents || []
+  }))
+  return { name: 'Custom', id: 'database', nodeTypes }
+}
+
+/**
+ * List available preset IDs
  */
 export function getAvailablePresets(): { id: string; name: string }[] {
   return Object.entries(PRESETS).map(([id, config]) => ({

@@ -1,9 +1,22 @@
 import { Suspense } from 'react'
 import { query } from '../../lib/db'
 import { ContextAwareDataProvider } from './ContextAwareDataProvider'
+import { setActiveConfig, rowsToConfig } from '../../lib/config'
 
 export async function GlobalContextAwareProvider({ children }: { children: React.ReactNode }) {
   const userId = process.env.DEFAULT_USER_ID || 'default-user'
+
+  // Load node types from DB and set as active config
+  try {
+    const nodeTypeRows = await query(
+      'SELECT slug, name, description, icon, color, chip_classes, valid_children, valid_parents, sort_order FROM node_types ORDER BY sort_order ASC'
+    )
+    if (nodeTypeRows && nodeTypeRows.length > 0) {
+      setActiveConfig(rowsToConfig(nodeTypeRows))
+    }
+  } catch {
+    // node_types table may not exist yet
+  }
 
   // Load nodes from default context
   let endeavors: any[] = []
