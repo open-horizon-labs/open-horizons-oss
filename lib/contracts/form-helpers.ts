@@ -11,38 +11,25 @@ import {
   UserNodeType,
   ContractViolationError
 } from './endeavor-contract'
+import { getActiveConfig } from '../config'
 
 /**
- * Get all valid user input node types for form dropdowns
+ * Get all valid user input node types for form dropdowns.
  *
- * This ensures dropdowns only show types that the API accepts.
- * If you add a new type to the contract, it automatically appears in all forms.
+ * This is now derived from the active strategy configuration.
+ * Changing STRATEGY_PRESET changes what appears in dropdowns.
  */
-export function getValidNodeTypes(): { value: UserNodeType; label: string }[] {
-  return [
-    { value: 'mission', label: 'Mission' },
-    { value: 'aim', label: 'Aim' },
-    { value: 'initiative', label: 'Initiative' },
-    { value: 'task', label: 'Task' }
-  ]
+export function getValidNodeTypes(): { value: string; label: string }[] {
+  return getActiveConfig().nodeTypes.map(nt => ({
+    value: nt.slug,
+    label: nt.name
+  }))
 }
 
 /**
  * Validate form data against create endeavor contract BEFORE sending to API
  *
  * This prevents the form from sending invalid requests that would get 400 errors.
- *
- * Usage in form components:
- * ```typescript
- * const handleSubmit = (formData) => {
- *   try {
- *     const validRequest = validateFormData(formData)
- *     // Send validRequest to API - guaranteed to pass API validation
- *   } catch (error) {
- *     // Show user-friendly validation errors
- *   }
- * }
- * ```
  */
 export function validateFormData(formData: {
   title?: string
@@ -112,21 +99,6 @@ export function getFieldConstraints() {
 
 /**
  * Real-time form validation using contracts
- *
- * Usage in React forms:
- * ```typescript
- * const [formData, setFormData] = useState({ title: '', type: 'mission' })
- * const [errors, setErrors] = useState({})
- *
- * const handleChange = (field, value) => {
- *   const newData = { ...formData, [field]: value }
- *   setFormData(newData)
- *
- *   // Real-time validation
- *   const validationErrors = validateFormFieldsRealtime(newData)
- *   setErrors(validationErrors)
- * }
- * ```
  */
 export function validateFormFieldsRealtime(formData: {
   title?: string

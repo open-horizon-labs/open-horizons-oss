@@ -1,36 +1,42 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { GraphNode, DatabaseNodeType } from '../../lib/contracts/endeavor-contract'
+import { GraphNode } from '../../lib/contracts/endeavor-contract'
 import { getValidParentTypes } from '../../lib/graph/types'
 import { getRoleIcon } from '../../lib/constants/icons'
+import { getActiveConfig } from '../../lib/config'
 
 interface CreateChildModalProps {
   isOpen: boolean
   onClose: () => void
-  childType: DatabaseNodeType
+  childType: string
   currentParent: GraphNode
   allNodes: GraphNode[]
   onCreateChild: (title: string, parentId: string) => void
   loading?: boolean
 }
 
-export function CreateChildModal({ 
-  isOpen, 
-  onClose, 
-  childType, 
-  currentParent, 
-  allNodes, 
+export function CreateChildModal({
+  isOpen,
+  onClose,
+  childType,
+  currentParent,
+  allNodes,
   onCreateChild,
-  loading = false 
+  loading = false
 }: CreateChildModalProps) {
   const [title, setTitle] = useState('')
   const [selectedParentId, setSelectedParentId] = useState(currentParent.id)
+  const config = getActiveConfig()
 
-  // Get potential parents using the formal RDF type hierarchy
+  // Resolve display name from config
+  const childTypeConfig = config.nodeTypes.find(nt => nt.name === childType || nt.slug === childType)
+  const displayTypeName = childTypeConfig?.name || childType
+
+  // Get potential parents using the config-driven hierarchy
   const getPotentialParents = () => {
     const validParentTypes = getValidParentTypes(childType)
-    return allNodes.filter(node => node.node_type && validParentTypes.includes(node.node_type as DatabaseNodeType))
+    return allNodes.filter(node => node.node_type && validParentTypes.includes(node.node_type))
   }
 
   const potentialParents = getPotentialParents()
@@ -57,7 +63,7 @@ export function CreateChildModal({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium flex items-center gap-2">
               <span>{getRoleIcon(childType)}</span>
-              Create New {childType.charAt(0).toUpperCase() + childType.slice(1)}
+              Create New {displayTypeName}
             </h2>
             <button
               onClick={handleCancel}
@@ -77,7 +83,7 @@ export function CreateChildModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={`Enter ${childType} title...`}
+                placeholder={`Enter ${displayTypeName} title...`}
                 autoFocus
                 required
               />
@@ -100,7 +106,7 @@ export function CreateChildModal({
               </select>
               {potentialParents.length === 0 && (
                 <p className="text-sm text-gray-500 mt-1">
-                  No valid parents found for {childType}
+                  No valid parents found for {displayTypeName}
                 </p>
               )}
             </div>
@@ -111,7 +117,7 @@ export function CreateChildModal({
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium disabled:opacity-50"
                 disabled={!title.trim() || loading}
               >
-                {loading ? 'Creating...' : `Create ${childType.charAt(0).toUpperCase() + childType.slice(1)}`}
+                {loading ? 'Creating...' : `Create ${displayTypeName}`}
               </button>
               <button
                 type="button"

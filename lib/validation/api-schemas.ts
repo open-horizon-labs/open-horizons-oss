@@ -1,16 +1,22 @@
 import { z } from 'zod'
-import { UserNodeType, DatabaseNodeType } from '../contracts/endeavor-contract'
+import { getActiveConfig } from '../config'
 
 /**
  * Parameter validation schemas - validate user input BEFORE processing
- * Uses contract constants to ensure consistency
+ * Now derived from the active strategy configuration.
  */
 
-// Valid node types that users can specify (lowercase) - from contract
-export const UserNodeTypeSchema = UserNodeType
+// Valid node types that users can specify (slugs) - from config
+export const UserNodeTypeSchema = z.string().refine(
+  (val) => getActiveConfig().nodeTypes.some(nt => nt.slug === val),
+  (val) => ({ message: `Invalid user node type "${val}"` })
+)
 
-// Valid node types in database (capitalized) - from contract
-export const DatabaseNodeTypeSchema = DatabaseNodeType
+// Valid node types in database (names) - from config
+export const DatabaseNodeTypeSchema = z.string().refine(
+  (val) => getActiveConfig().nodeTypes.some(nt => nt.name === val),
+  (val) => ({ message: `Invalid database node type "${val}"` })
+)
 
 // User input for creating endeavors
 export const CreateEndeavorRequestSchema = z.object({
@@ -61,6 +67,11 @@ export function transformCreateEndeavorRequest(
   // Validate user input first
   const validated = CreateEndeavorRequestSchema.parse(userInput)
 
+  // Look up the DB name from the slug via config
+  const config = getActiveConfig()
+  const nodeTypeConfig = config.nodeTypes.find(nt => nt.slug === validated.type)
+  const dbNodeType = nodeTypeConfig ? nodeTypeConfig.name : validated.type
+
   // Generate endeavor ID
   const endeavorId = `${validated.type}:${userId}:${Date.now()}-${crypto.randomUUID().substring(0, 8)}`
 
@@ -72,7 +83,7 @@ export function transformCreateEndeavorRequest(
     title: validated.title,
     description: '',
     status: 'active' as const,
-    node_type: (validated.type.charAt(0).toUpperCase() + validated.type.slice(1)) as z.infer<typeof DatabaseNodeTypeSchema>,
+    node_type: dbNodeType,
     context_id: resolvedContextId,
     parent_id: validated.parentId || null
   }

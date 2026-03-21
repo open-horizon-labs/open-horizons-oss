@@ -4,6 +4,9 @@
  * This file defines the explicit contract between API routes and UI components.
  * ALL API routes and UI code must use these contracts to prevent schema drift.
  *
+ * Node types are now derived from the active strategy configuration.
+ * Changing STRATEGY_PRESET changes the valid types throughout the app.
+ *
  * Philosophy:
  * - API tests validate against contracts
  * - API routes implement contracts
@@ -12,26 +15,90 @@
  */
 
 import { z } from 'zod'
+import { getActiveConfig } from '../config'
 
 // ========================================
-// CORE TYPE DEFINITIONS (Source of Truth)
+// CORE TYPE DEFINITIONS (Derived from Config)
 // ========================================
 
-/** User input node types (lowercase - what users send) */
-export const UserNodeType = z.enum(['mission', 'aim', 'initiative', 'task'])
-export type UserNodeType = z.infer<typeof UserNodeType>
+/**
+ * Build Zod enum schemas dynamically from the active configuration.
+ *
+ * UserNodeType  = slugs   (lowercase, what users send)
+ * DatabaseNodeType = names (capitalized, stored/returned format)
+ *
+ * We cache the result so repeated imports share one schema instance.
+ */
+function buildNodeTypeSchemas() {
+  const config = getActiveConfig()
+  const slugs = config.nodeTypes.map(nt => nt.slug) as [string, ...string[]]
+  const names = config.nodeTypes.map(nt => nt.name) as [string, ...string[]]
 
-/** Database node types (capitalized - stored format) */
-export const DatabaseNodeType = z.enum(['Mission', 'Aim', 'Initiative', 'Task'])
-export type DatabaseNodeType = z.infer<typeof DatabaseNodeType>
+  return {
+    userSchema: z.enum(slugs),
+    dbSchema: z.enum(names)
+  }
+}
 
-/** API response node types (capitalized - returned to UI) */
+// Lazy-initialised cache so the config is read once per process
+let _schemas: ReturnType<typeof buildNodeTypeSchemas> | null = null
+function getSchemas() {
+  if (!_schemas) _schemas = buildNodeTypeSchemas()
+  return _schemas
+}
+
+/** User input node types (slugs - what users send, e.g. "mission", "strategic_bet") */
+export const UserNodeType: z.ZodEnum<[string, ...string[]]> = z.lazy(() => getSchemas().userSchema) as unknown as z.ZodEnum<[string, ...string[]]>
+export type UserNodeType = string
+
+/** Database node types (names - stored format, e.g. "Mission", "Strategic Bet") */
+export const DatabaseNodeType: z.ZodEnum<[string, ...string[]]> = z.lazy(() => getSchemas().dbSchema) as unknown as z.ZodEnum<[string, ...string[]]>
+export type DatabaseNodeType = string
+
+/** API response node types (same as database format) */
 export const ApiNodeType = DatabaseNodeType
 export type ApiNodeType = DatabaseNodeType
 
+/**
+ * Expose the enum-like `.enum` accessor that existing code uses
+ * (e.g. `DatabaseNodeType.enum.Mission`).
+ *
+ * We build a proxy object so any valid name resolves to itself.
+ */
+function buildEnumProxy(values: string[]): Record<string, string> {
+  const obj: Record<string, string> = {}
+  for (const v of values) obj[v] = v
+  return obj
+}
+
+// Attach .enum to the Zod schema objects so existing code like
+// `DatabaseNodeType.enum.Mission` still works.
+;(DatabaseNodeType as any).enum = new Proxy(
+  buildEnumProxy(getActiveConfig().nodeTypes.map(nt => nt.name)),
+  { get: (target, prop) => target[prop as string] }
+)
+;(UserNodeType as any).enum = new Proxy(
+  buildEnumProxy(getActiveConfig().nodeTypes.map(nt => nt.slug)),
+  { get: (target, prop) => target[prop as string] }
+)
+
 // Transform functions (centralized, tested)
-export function userToDbNodeType(userType: UserNodeType): DatabaseNodeType {
-  return (userType.charAt(0).toUpperCase() + userType.slice(1)) as DatabaseNodeType
+export function userToDbNodeType(userSlug: UserNodeType): DatabaseNodeType {
+  const config = getActiveConfig()
+  const found = config.nodeTypes.find(nt => nt.slug === userSlug)
+  if (!found) {
+    throw new Error(`Unknown user node type slug: "${userSlug}". Valid: ${config.nodeTypes.map(nt => nt.slug).join(', ')}`)
+  }
+  return found.name as DatabaseNodeType
+}
+
+export function dbToUserNodeType(dbName: DatabaseNodeType): UserNodeType {
+  const config = getActiveConfig()
+  const found = config.nodeTypes.find(nt => nt.name === dbName)
+  if (!found) {
+    throw new Error(`Unknown database node type: "${dbName}". Valid: ${config.nodeTypes.map(nt => nt.name).join(', ')}`)
+  }
+  return found.slug as UserNodeType
 }
 
 export function dbToApiNodeType(dbType: DatabaseNodeType): ApiNodeType {
@@ -45,7 +112,10 @@ export function dbToApiNodeType(dbType: DatabaseNodeType): ApiNodeType {
 /** Request: Create Endeavor */
 export const CreateEndeavorRequest = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title too long'),
-  type: UserNodeType,
+  type: z.string().refine(
+    (val) => getActiveConfig().nodeTypes.some(nt => nt.slug === val),
+    (val) => ({ message: `Invalid node type "${val}". Valid types: ${getActiveConfig().nodeTypes.map(nt => nt.slug).join(', ')}` })
+  ),
   contextId: z.string().optional().nullable(),
   parentId: z.string().optional().nullable()
 })
@@ -102,14 +172,17 @@ export const EndeavorMetadata = z.object({
 /** GraphNode for dashboard/UI consumption - matches database schema exactly */
 export const GraphNode = z.object({
   id: z.string(),
-  node_type: ApiNodeType,  // ✅ Use database field name
-  parent_id: z.string().nullable(),  // ✅ Use database field name
+  node_type: z.string().refine(
+    (val) => getActiveConfig().nodeTypes.some(nt => nt.name === val),
+    (val) => ({ message: `Invalid node type "${val}". Valid types: ${getActiveConfig().nodeTypes.map(nt => nt.name).join(', ')}` })
+  ),
+  parent_id: z.string().nullable(),
   title: z.string(),
   description: z.string(),
   status: z.string(),
   metadata: EndeavorMetadata,
-  created_at: z.string(),  // ✅ Use database field name
-  archived_at: z.string().nullable(),  // ✅ Use database field name
+  created_at: z.string(),
+  archived_at: z.string().nullable(),
   // Legacy fields for backward compatibility during migration
   rdfType: z.string().optional(),
   parent: z.string().nullable().optional(),
@@ -290,8 +363,6 @@ export function transformToDatabase(
   // Note: parent_id is NOT set here - parent relationships are stored as edges
   return {
     id: endeavorId,
-    user_id: userId,
-    created_by: userId,
     title: validated.title,
     description: '',
     status: 'active' as const,
@@ -299,4 +370,3 @@ export function transformToDatabase(
     context_id: resolvedContextId
   }
 }
-
