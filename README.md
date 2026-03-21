@@ -63,9 +63,9 @@ The graph itself is flexible -- any node can connect to any other node via edges
 Mission > Aim > Initiative > Task
 ```
 
-**Agentic Flow** (for AI-native workflows):
+**Agentic Flow** (for AI-native workflows -- strategy only, execution belongs in delivery tools):
 ```
-Mission > Strategic Bet > Capability > Tactical Plan > Outcome
+Mission > Strategic Bet > Capability > Outcome Spec
 ```
 
 **Via API:**

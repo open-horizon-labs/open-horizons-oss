@@ -3,11 +3,17 @@ import { StrategyConfig } from '../node-types'
 /**
  * Agentic Flow Preset
  *
- * A strategy hierarchy designed for agentic and AI-native workflows:
- * Mission > Strategic Bet > Capability > Tactical Plan > Outcome
+ * A flat, four-level strategy hierarchy for AI-native workflows:
+ * Mission > Strategic Bet > Capability > Outcome Spec
  *
- * Inspired by Theron's stack — emphasizes bets, capabilities,
- * and measurable outcomes over traditional project management.
+ * Each level has a clear owner and answers one question:
+ *   Mission:       Why do we exist?
+ *   Strategic Bet: Where are we investing?
+ *   Capability:    What must we be able to do?
+ *   Outcome Spec:  How will we know it's working?
+ *
+ * Execution artifacts (tasks, plans, initiatives) belong in the
+ * delivery layer (Linear, GitHub Issues, etc.), not the strategy graph.
  */
 export const agenticFlowConfig: StrategyConfig = {
   name: 'Agentic Flow',
@@ -16,7 +22,7 @@ export const agenticFlowConfig: StrategyConfig = {
     {
       name: 'Mission',
       slug: 'mission',
-      description: 'High-level purpose and direction',
+      description: 'Why we exist — fundamental purpose and direction',
       color: '#7c3aed',
       icon: '\uD83C\uDFAF', // target emoji
       chipClasses: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -26,7 +32,7 @@ export const agenticFlowConfig: StrategyConfig = {
     {
       name: 'Strategic Bet',
       slug: 'strategic_bet',
-      description: 'High-conviction investment areas with expected payoff',
+      description: 'Where we are investing — high-conviction areas with expected payoff',
       color: '#dc2626',
       icon: '\uD83C\uDFB2', // dice emoji
       chipClasses: 'bg-red-100 text-red-800 border-red-200',
@@ -36,32 +42,22 @@ export const agenticFlowConfig: StrategyConfig = {
     {
       name: 'Capability',
       slug: 'capability',
-      description: 'Skills, systems, or assets that enable execution',
+      description: 'What we must be able to do — skills, systems, or platform abilities',
       color: '#2563eb',
       icon: '\u2699\uFE0F', // gear emoji
       chipClasses: 'bg-blue-100 text-blue-800 border-blue-200',
-      validChildren: ['tactical_plan'],
+      validChildren: ['outcome_spec'],
       validParents: ['strategic_bet']
     },
     {
-      name: 'Tactical Plan',
-      slug: 'tactical_plan',
-      description: 'Concrete plans to build or leverage capabilities',
-      color: '#16a34a',
-      icon: '\uD83D\uDCCB', // clipboard emoji
-      chipClasses: 'bg-green-100 text-green-800 border-green-200',
-      validChildren: ['outcome'],
-      validParents: ['capability']
-    },
-    {
-      name: 'Outcome',
-      slug: 'outcome',
-      description: 'Measurable results that validate the strategy',
+      name: 'Outcome Spec',
+      slug: 'outcome_spec',
+      description: 'How we will know it works — measurable, testable acceptance criteria',
       color: '#ca8a04',
-      icon: '\u2B50', // star emoji
+      icon: '\u2705', // checkmark emoji
       chipClasses: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       validChildren: [],
-      validParents: ['tactical_plan']
+      validParents: ['capability']
     }
   ]
 }

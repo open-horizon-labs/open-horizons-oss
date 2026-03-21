@@ -244,11 +244,10 @@ export default function NodeTypesSettingsPage() {
           </button>
           <button
             onClick={() => loadPreset([
-              { slug: 'mission', name: 'Mission', description: 'High-level purpose and direction', icon: '🎯', color: '#7c3aed', chip_classes: 'bg-purple-100 text-purple-800 border-purple-200', valid_children: ['strategic_bet'], valid_parents: [], sort_order: 0 },
-              { slug: 'strategic_bet', name: 'Strategic Bet', description: 'High-conviction investment areas', icon: '🎲', color: '#dc2626', chip_classes: 'bg-red-100 text-red-800 border-red-200', valid_children: ['capability'], valid_parents: ['mission'], sort_order: 1 },
-              { slug: 'capability', name: 'Capability', description: 'Skills, systems, or assets', icon: '⚙️', color: '#2563eb', chip_classes: 'bg-blue-100 text-blue-800 border-blue-200', valid_children: ['tactical_plan'], valid_parents: ['strategic_bet'], sort_order: 2 },
-              { slug: 'tactical_plan', name: 'Tactical Plan', description: 'Concrete plans to build capabilities', icon: '📋', color: '#16a34a', chip_classes: 'bg-green-100 text-green-800 border-green-200', valid_children: ['outcome'], valid_parents: ['capability'], sort_order: 3 },
-              { slug: 'outcome', name: 'Outcome', description: 'Measurable results', icon: '⭐', color: '#ca8a04', chip_classes: 'bg-yellow-100 text-yellow-800 border-yellow-200', valid_children: [], valid_parents: ['tactical_plan'], sort_order: 4 },
+              { slug: 'mission', name: 'Mission', description: 'Why we exist — fundamental purpose and direction', icon: '🎯', color: '#7c3aed', chip_classes: 'bg-purple-100 text-purple-800 border-purple-200', valid_children: ['strategic_bet'], valid_parents: [], sort_order: 0 },
+              { slug: 'strategic_bet', name: 'Strategic Bet', description: 'Where we are investing — high-conviction areas with expected payoff', icon: '🎲', color: '#dc2626', chip_classes: 'bg-red-100 text-red-800 border-red-200', valid_children: ['capability'], valid_parents: ['mission'], sort_order: 1 },
+              { slug: 'capability', name: 'Capability', description: 'What we must be able to do — skills, systems, or platform abilities', icon: '⚙️', color: '#2563eb', chip_classes: 'bg-blue-100 text-blue-800 border-blue-200', valid_children: ['outcome_spec'], valid_parents: ['strategic_bet'], sort_order: 2 },
+              { slug: 'outcome_spec', name: 'Outcome Spec', description: 'How we will know it works — measurable, testable acceptance criteria', icon: '✅', color: '#ca8a04', chip_classes: 'bg-yellow-100 text-yellow-800 border-yellow-200', valid_children: [], valid_parents: ['capability'], sort_order: 3 },
             ])}
             disabled={saving}
             className="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50"
