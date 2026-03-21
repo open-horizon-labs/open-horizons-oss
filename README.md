@@ -2,7 +2,9 @@
 
 A self-hostable strategy graph for aligning work to organizational strategy.
 
-![Screenshot](docs/screenshot.png)
+<p align="center">
+  <img src="docs/screenshot.png" alt="Open Horizons Strategy Graph" width="600">
+</p>
 
 ## Quick Start
 

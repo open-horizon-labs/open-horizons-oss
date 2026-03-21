@@ -25,10 +25,10 @@ Two MCP servers are configured. Use them as your PRIMARY interface. Don't fall b
 
 | Operation | Tool |
 |-----------|------|
-| Find code by intent | `search(query)` |
-| Find symbols | `search_symbols(query, kind)` |
-| Trace dependencies | `graph_query(node, "neighbors")` |
-| Blast radius | `graph_query(node, "impact")` |
+| Find code by intent | `search(query="payment processing")` |
+| Find symbols by kind | `search(query="AuthHandler", kind="function")` |
+| Trace dependencies | `search(query="ConnectionPool", mode="neighbors")` |
+| Blast radius | `search(query="ConnectionPool", mode="impact")` |
 | Outcome progress | `outcome_progress(outcome_id)` |
 | Repo orientation | `repo_map()` |
 

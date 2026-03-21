@@ -1,6 +1,5 @@
 /**
- * Generic Postgres connection pool
- * Replaces all Supabase client usage with direct SQL queries
+ * Postgres connection pool — direct SQL queries via pg
  */
 
 import 'server-only'

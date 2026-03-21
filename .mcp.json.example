@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "rna-mcp": {
+      "type": "stdio",
+      "command": "repo-native-alignment",
+      "args": ["--repo", "."],
+      "env": {}
+    },
+    "oh-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["oh-mcp-server"],
+      "env": {
+        "OH_API_URL": "http://localhost:3000",
+        "OH_API_KEY": "dummy"
+      }
+    }
+  }
+}

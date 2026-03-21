@@ -14,12 +14,6 @@ dist/
 .env*.local
 .env*.local.*
 
-# supabase
-supabase/.temp/
-
-# vercel
-.vercel
-
 # misc
 .DS_Store
 *.swp
@@ -35,3 +29,5 @@ deployment-logs/
 # IDE
 .idea/
 .vscode/
+.mcp.json
+.oh/.cache/

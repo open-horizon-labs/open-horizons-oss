@@ -15,5 +15,3 @@ tests
 jest.config.js
 jest.api.config.js
 jest.setup.js
-supabase
-.vercel
