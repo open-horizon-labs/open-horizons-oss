@@ -176,4 +176,4 @@ Built with Next.js 15, React 19, TypeScript, PrimeReact, Tailwind CSS, and Postg
 
 ## License
 
-MIT
+MIT -- Copyright (c) 2026 Open Horizon Labs
