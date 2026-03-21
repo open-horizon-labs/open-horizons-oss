@@ -19,8 +19,8 @@
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/react-fontawesome": "^3.3.0",
     "@oh/ui": "workspace:*",
-    "pg": "^8.20.0",
     "next": "^15.5.14",
+    "pg": "^8.20.0",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.7",
     "react": "^19.0.4",
@@ -50,6 +50,7 @@
     "jest-environment-jsdom": "^30.3.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-language-server": "^5.1.3"
   }
 }
