@@ -1,99 +1,48 @@
-# MCP Server Setup
+# MCP Setup
 
-Open Horizons exposes a lightweight MCP-compatible JSON-RPC endpoint at `/api/mcp`. This lets AI agents (Claude Desktop, custom scripts, the standalone [oh-mcp-server](https://github.com/open-horizon-labs/oh-mcp-server)) read your endeavor graph.
+Open Horizons has two MCP integration points:
 
-## Quick start
+1. A **built-in JSON-RPC endpoint** at `/api/mcp` for direct API access.
+2. An **external MCP server** ([oh-mcp-server](https://github.com/open-horizon-labs/oh-mcp-server)) that provides stdio-based MCP tools for AI agents like Claude Desktop and Claude Code.
 
-1. Start the app (`pnpm dev` or via Docker).
-2. Point your MCP client at `http://localhost:3000/api/mcp`.
-3. Authenticate with a Bearer token (session cookie or API key).
+No authentication is required. The OSS version has no API keys, Bearer tokens, or RLS.
 
-## Authentication
+## Built-in JSON-RPC Endpoint
 
-Every request must include an `Authorization` header:
+The app exposes a JSON-RPC 2.0 endpoint at `POST /api/mcp`.
 
-```
-Authorization: Bearer ak_YOUR_API_KEY
-```
-
-API keys are created in **Settings > API Keys** inside the app.
-Session cookies also work when requests originate from the same browser.
-
-## JSON-RPC protocol
-
-Send a POST to `/api/mcp` with a JSON body:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "list_endeavors",
-  "params": {}
-}
+```bash
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"get_tree","params":{"context_id":"default"}}'
 ```
 
-The response follows JSON-RPC 2.0:
+### Available Methods
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": { "endeavors": [...] }
-}
+| Method | Params | Description |
+|--------|--------|-------------|
+| `list_endeavors` | `context_id?`, `node_type?`, `limit?` | List endeavors with optional filters |
+| `get_endeavor` | `id` (required) | Get endeavor with its children and parent |
+| `get_tree` | `context_id` (required) | Full hierarchy as nested tree |
+| `search_endeavors` | `query` (required), `context_id?`, `limit?` | Text search across titles and descriptions |
+| `list_metis` | `endeavor_id` (required) | Metis entries for an endeavor |
+| `list_guardrails` | `endeavor_id` (required) | Guardrails for an endeavor |
+| `create_candidate` | `endeavor_id`, `type`, `content` (all required) | Propose a metis or guardrail |
+| `get_extensions` | `endeavor_id` (required) | Metis + guardrails for an endeavor |
+
+## oh-mcp-server (Recommended for AI Agents)
+
+The [oh-mcp-server](https://github.com/open-horizon-labs/oh-mcp-server) wraps the JSON-RPC endpoint in MCP stdio transport, which is what Claude Desktop and Claude Code expect.
+
+### Quick Start
+
+```bash
+OH_API_URL=http://localhost:3000 OH_API_KEY=dummy npx oh-mcp-server
 ```
 
-## Available methods
+`OH_API_KEY` must be set to a non-empty string. The OSS version has no auth, but the MCP server requires the variable. Use any value (e.g., `dummy`).
 
-### `list_endeavors`
-
-List endeavors, optionally filtered.
-
-| Param        | Type   | Required | Description                        |
-|-------------|--------|----------|------------------------------------|
-| context_id  | string | no       | Filter by context                  |
-| node_type   | string | no       | Filter by type (Mission, Aim, etc) |
-| limit       | number | no       | Max results (default 100)          |
-
-**Example:**
-
-```json
-{"method": "list_endeavors", "params": {"context_id": "personal:abc", "node_type": "Aim"}}
-```
-
-### `get_endeavor`
-
-Get a single endeavor with its children.
-
-| Param | Type   | Required | Description  |
-|-------|--------|----------|-------------|
-| id    | string | yes      | Endeavor ID |
-
-**Response includes:** the endeavor (with `parent_id`), and a `children` array.
-
-### `get_tree`
-
-Get the full hierarchy for a context as a nested tree.
-
-| Param      | Type   | Required | Description |
-|-----------|--------|----------|-------------|
-| context_id | string | yes      | Context ID  |
-
-**Response includes:**
-- `tree` -- nested nodes with `children` arrays (roots at top level)
-- `flat_nodes` -- flat list with `parent_id` on each node
-- `edges` -- raw edge records
-
-### `search_endeavors`
-
-Full-text search across titles and descriptions.
-
-| Param      | Type   | Required | Description              |
-|-----------|--------|----------|--------------------------|
-| query     | string | yes      | Search term              |
-| context_id | string | no       | Limit to a context       |
-| limit     | number | no       | Max results (default 20) |
-
-## Claude Desktop configuration
+### Claude Desktop Configuration
 
 Add to your `claude_desktop_config.json`:
 
@@ -101,45 +50,75 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "open-horizons": {
-      "url": "http://localhost:3000/api/mcp",
-      "headers": {
-        "Authorization": "Bearer ak_YOUR_API_KEY"
+      "command": "npx",
+      "args": ["oh-mcp-server"],
+      "env": {
+        "OH_API_URL": "http://localhost:3000",
+        "OH_API_KEY": "dummy"
       }
     }
   }
 }
 ```
 
-See also the example config at `mcp-config.example.json` in the repo root.
+### Claude Code Configuration
 
-## Standalone oh-mcp-server
+Add to `.mcp.json` in your project root:
 
-The external [oh-mcp-server](https://github.com/open-horizon-labs/oh-mcp-server) can connect in two modes:
-
-### 1. Via the app API (recommended)
-
-Point it at this endpoint. The MCP server proxies requests through the app, which handles auth and RLS.
-
-```bash
-OH_API_URL=http://localhost:3000
-OH_API_KEY=ak_YOUR_API_KEY
+```json
+{
+  "mcpServers": {
+    "oh-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["oh-mcp-server"],
+      "env": {
+        "OH_API_URL": "http://localhost:3000",
+        "OH_API_KEY": "dummy"
+      }
+    }
+  }
+}
 ```
 
-### 2. Via direct Postgres connection
+### Available Tools
 
-For self-hosted deployments where the MCP server runs alongside the database:
+When connected via oh-mcp-server, AI agents get these tools:
 
-```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/open_horizons
+| Tool | Description |
+|------|-------------|
+| `oh_get_contexts` | List workspaces |
+| `oh_get_endeavors` | List endeavors in a context |
+| `oh_get_endeavor` | Get endeavor with children |
+| `oh_get_dive_context` | Full context: ancestors, siblings, metis, guardrails |
+| `oh_create_endeavor` | Create a new endeavor |
+| `oh_update_endeavor` | Update title or description |
+| `oh_set_parent` | Move an endeavor in the hierarchy |
+| `oh_log_decision` | Log a decision to an endeavor |
+| `oh_create_metis_candidate` | Propose a pattern or learning |
+| `oh_create_guardrail_candidate` | Propose a constraint |
+| `oh_get_logs` | Get recent logs for an endeavor |
+
+### Streamable HTTP Configuration
+
+If your MCP client supports HTTP-based MCP (not stdio), you can point directly at the JSON-RPC endpoint:
+
+```json
+{
+  "mcpServers": {
+    "open-horizons": {
+      "url": "http://localhost:3000/api/mcp"
+    }
+  }
+}
 ```
 
-This bypasses the app layer entirely. Useful for read-only tooling and scripts that need direct SQL access. Make sure the database user has appropriate read permissions.
+See `mcp-config.example.json` in the repo root for a minimal example.
 
-## Environment variables
+## Environment Variables
 
-| Variable           | Description                                  |
-|-------------------|----------------------------------------------|
-| `NEXT_PUBLIC_APP_URL` | Base URL of the app (for MCP server config) |
-| `DATABASE_URL`       | Direct Postgres URL (for oh-mcp-server)     |
-
-No additional environment variables are needed for the built-in `/api/mcp` endpoint -- it uses the app's existing database connection and auth.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OH_API_URL` | For oh-mcp-server | URL of your Open Horizons instance |
+| `OH_API_KEY` | For oh-mcp-server | Any non-empty string (no real auth in OSS) |
+| `DATABASE_URL` | For the app | PostgreSQL connection string (set by Docker Compose) |
