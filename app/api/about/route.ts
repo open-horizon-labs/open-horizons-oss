@@ -2,95 +2,92 @@
  * GET /api/about
  *
  * Public endpoint that returns information about Open Horizons.
- * Useful for API consumers and AI agents to understand the system.
+ * Derives hierarchy from the active strategy configuration.
  */
 
-const ABOUT_INFO = {
-  name: 'Open Horizons',
-  version: '0.1.0',
-  description: 'An AI-native strategic alignment system that connects high-level intent to daily execution.',
+import { getActiveConfig } from '../../../lib/config'
 
-  coreModel: {
-    hierarchy: [
-      { level: 1, type: 'Mission', description: 'Why you exist - your fundamental purpose' },
-      { level: 2, type: 'Aim', description: 'Outcome you want - specific goals to achieve' },
-      { level: 3, type: 'Initiative', description: 'How you\'ll achieve it - strategies and approaches' },
-      { level: 4, type: 'Task', description: 'What you do today - concrete actions' }
-    ],
-    principle: 'Every task traces back to a mission, so you always know *why*'
-  },
+function buildAboutInfo() {
+  const config = getActiveConfig()
 
-  concepts: {
-    contexts: 'Spaces where endeavors live',
-    endeavors: 'Any node in the hierarchy (mission, aim, initiative, task)',
-    alignment: 'The thread connecting daily work to strategic purpose'
-  },
+  return {
+    name: 'Open Horizons',
+    version: '0.1.0',
+    description: 'A self-hostable strategy graph for aligning work to organizational strategy.',
+    strategyPreset: config.name,
 
-  apiEndpoints: {
-    contexts: {
-      list: 'GET /api/contexts',
-      get: 'GET /api/contexts/:contextId'
+    coreModel: {
+      hierarchy: config.nodeTypes.map((nt, i) => ({
+        level: i + 1,
+        type: nt.name,
+        slug: nt.slug,
+        description: nt.description,
+        validChildren: nt.validChildren
+      })),
+      principle: 'Every node traces back to a mission, so you always know *why*'
     },
-    endeavors: {
-      dashboard: 'GET /api/dashboard?contextId=:contextId',
-      get: 'GET /api/endeavors/:id',
-      create: 'POST /api/endeavors/create'
-    }
-  },
 
-  bestPractices: [
-    'Always trace tasks back to their parent mission to understand *why*',
-    'Use contexts to separate different domains of work',
-    'Structure your hierarchy so every task traces to a mission'
-  ]
+    concepts: {
+      contexts: 'Spaces where endeavors live',
+      endeavors: 'Any node in the hierarchy',
+      alignment: 'The thread connecting daily work to strategic purpose'
+    },
+
+    apiEndpoints: {
+      contexts: {
+        list: 'GET /api/contexts',
+        get: 'GET /api/contexts/:contextId'
+      },
+      endeavors: {
+        dashboard: 'GET /api/dashboard?contextId=:contextId',
+        get: 'GET /api/endeavors/:id',
+        create: 'POST /api/endeavors/create'
+      },
+      mcp: {
+        endpoint: 'POST /api/mcp',
+        methods: ['list_endeavors', 'get_endeavor', 'get_tree', 'search_endeavors']
+      }
+    }
+  }
 }
 
-const ABOUT_MARKDOWN = `# Open Horizons
+function buildAboutMarkdown() {
+  const config = getActiveConfig()
+  const tree = config.nodeTypes.map((nt, i) => {
+    const indent = '  '.repeat(i)
+    const arrow = i > 0 ? '└── ' : ''
+    return `${indent}${arrow}${nt.name} (${nt.description})`
+  }).join('\n')
 
-Open Horizons is an AI-native strategic alignment system that connects high-level intent to daily execution.
+  return `# Open Horizons
 
-## Core Model
+A self-hostable strategy graph for aligning work to organizational strategy.
+
+## Active Preset: ${config.name}
 
 \`\`\`
-Mission (why you exist)
-  └── Aim (outcome you want)
-       └── Initiative (how you'll achieve it)
-            └── Task (what you do today)
+${tree}
 \`\`\`
-
-## Key Concepts
-
-- **Contexts**: Spaces where endeavors live
-- **Endeavors**: Any node in the hierarchy (mission, aim, initiative, task)
-- **Alignment**: Every task traces back to a mission, so you always know *why*
 
 ## API Endpoints
 
-### Contexts
 - \`GET /api/contexts\` - List all contexts
-- \`GET /api/contexts/:contextId\` - Get context details
-
-### Endeavors
-- \`GET /api/dashboard?contextId=:contextId\` - Get endeavor hierarchy for a context
+- \`GET /api/dashboard?contextId=:contextId\` - Get endeavor hierarchy
 - \`GET /api/endeavors/:id\` - Get endeavor details
 - \`POST /api/endeavors/create\` - Create a new endeavor
-
-## Best Practices
-
-- Always trace tasks back to their parent mission to understand *why*
-- Use contexts to separate different domains of work
-- Structure your hierarchy so every task traces to a mission
+- \`POST /api/mcp\` - JSON-RPC endpoint for AI agents
 `
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const format = url.searchParams.get('format')
 
   if (format === 'markdown' || format === 'md') {
-    return new Response(ABOUT_MARKDOWN, {
+    return new Response(buildAboutMarkdown(), {
       headers: { 'Content-Type': 'text/markdown' }
     })
   }
 
-  return Response.json(ABOUT_INFO)
+  return Response.json(buildAboutInfo())
 }
