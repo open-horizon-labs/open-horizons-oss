@@ -44,36 +44,47 @@ No authentication is required. Open Horizons is designed to run on your own infr
 | `DATABASE_URL` | (set by Docker Compose) | PostgreSQL connection string |
 | `STRATEGY_PRESET` | `open-horizons` | Active node type hierarchy |
 
-### Strategy Presets
+### Configurable Node Type Hierarchy
 
-**`open-horizons`** -- The default. A purpose-driven hierarchy:
+Node types are data, not code. Configure them entirely through the UI at **Settings > Node Types**, or via the `/api/node-types` API.
 
+Each node type has:
+- **Name and slug** -- Display name and URL-safe identifier
+- **Icon and color** -- Emoji icon and hex color for visual distinction
+- **Valid children/parents** -- Advisory relationships for UI hints (not enforced at the DB level)
+- **Sort order** -- Position in the hierarchy (top = strategic, bottom = tactical)
+
+The graph itself is flexible -- any node can connect to any other node via edges. The hierarchy is a lens, not a constraint.
+
+**Built-in presets** can be loaded with one click from the Node Types settings page:
+
+**Open Horizons** (default):
 ```
 Mission > Aim > Initiative > Task
 ```
 
-**`agentic-flow`** -- Designed for AI-native and agentic workflows:
-
+**Agentic Flow** (for AI-native workflows):
 ```
 Mission > Strategic Bet > Capability > Tactical Plan > Outcome
 ```
 
-Set the preset via environment variable:
-
+**Via API:**
 ```bash
-STRATEGY_PRESET=agentic-flow docker compose up
+# List current node types
+curl http://localhost:3000/api/node-types
+
+# Create or update a node type
+curl -X POST http://localhost:3000/api/node-types \
+  -H "Content-Type: application/json" \
+  -d '{"slug":"bet","name":"Bet","description":"A strategic wager","icon":"🎲","color":"#dc2626","valid_children":["capability"],"valid_parents":["mission"],"sort_order":1}'
+
+# Load a preset (atomic replace)
+curl -X POST http://localhost:3000/api/node-types/load-preset \
+  -H "Content-Type: application/json" \
+  -d '{"nodeTypes":[...]}'
 ```
 
-Or in `docker-compose.yml`:
-
-```yaml
-environment:
-  STRATEGY_PRESET: agentic-flow
-```
-
-### Custom Presets
-
-Add a new file in `lib/config/presets/`, implement the `StrategyConfig` interface, and register it in `lib/config/index.ts`.
+The dashboard, lens filters, and child creation buttons all derive dynamically from the node types in the database. No restart required after changes.
 
 ## API
 
@@ -88,6 +99,8 @@ Add a new file in `lib/config/presets/`, implement the `StrategyConfig` interfac
 | DELETE | `/api/endeavors/:id` | Delete an endeavor |
 | GET/POST | `/api/edges` | List or create edges |
 | GET/POST | `/api/contexts` | List or create contexts |
+| GET/POST/DELETE | `/api/node-types` | Manage node type hierarchy |
+| POST | `/api/node-types/load-preset` | Atomic preset replacement |
 | GET | `/api/status` | Health check |
 
 ### MCP (JSON-RPC)
@@ -126,11 +139,10 @@ app/
   api/              Next.js API routes (REST + MCP)
   (pages)           Next.js app router pages
 lib/
-  config/           Node type system and strategy presets
+  config/           Node type presets (fallback when DB is empty)
   contracts/        Zod schemas for request/response validation
   db.ts             Postgres connection pool (pg)
   graph/            Graph traversal utilities
-  validation/       Input validation helpers
 db/
   schema.sql        Database schema (loaded by Docker on init)
   seed.sql          Seed data
