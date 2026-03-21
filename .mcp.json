@@ -2,8 +2,8 @@
   "mcpServers": {
     "rna-mcp": {
       "type": "stdio",
-      "command": "repo-native-alignment",
-      "args": ["--repo", ".", "--log-path", "/tmp/oh-oss-rna-mcp.log"],
+      "command": "/Users/muness1/.cargo/bin/repo-native-alignment",
+      "args": ["--repo", "/Users/muness1/src/open-horizon-labs/open-horizons-oss", "--log-path", "/tmp/oh-oss-rna-mcp.log"],
       "env": {
         "RUST_LOG": "repo_native_alignment=info"
       },
