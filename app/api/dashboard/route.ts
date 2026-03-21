@@ -37,7 +37,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser
       status: endeavor.status,
       metadata: endeavor.metadata || {},
       created_at: endeavor.created_at,
-      archived_at: null
+      archived_at: endeavor.status === 'archived' ? endeavor.updated_at : null
     }))
 
     return NextResponse.json({ nodes })

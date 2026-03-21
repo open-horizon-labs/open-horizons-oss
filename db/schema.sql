@@ -116,11 +116,26 @@ CREATE TABLE IF NOT EXISTS candidates (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Logs: decision logs, notes, and progress updates tied to endeavors
+CREATE TABLE IF NOT EXISTS logs (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  entity_type TEXT NOT NULL DEFAULT 'endeavor',
+  entity_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  content_type TEXT NOT NULL DEFAULT 'markdown',
+  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_metis_endeavor ON metis_entries(endeavor_id);
 CREATE INDEX IF NOT EXISTS idx_guardrails_endeavor ON guardrails(endeavor_id);
 CREATE INDEX IF NOT EXISTS idx_candidates_endeavor ON candidates(endeavor_id);
 CREATE INDEX IF NOT EXISTS idx_candidates_status ON candidates(status);
+CREATE INDEX IF NOT EXISTS idx_logs_entity ON logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_logs_date ON logs(log_date);
 
 CREATE OR REPLACE TRIGGER metis_updated_at BEFORE UPDATE ON metis_entries FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE OR REPLACE TRIGGER guardrails_updated_at BEFORE UPDATE ON guardrails FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE OR REPLACE TRIGGER candidates_updated_at BEFORE UPDATE ON candidates FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE OR REPLACE TRIGGER logs_updated_at BEFORE UPDATE ON logs FOR EACH ROW EXECUTE FUNCTION update_updated_at();

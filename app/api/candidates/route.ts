@@ -48,7 +48,8 @@ export const POST = withSimpleAuth(async (request: NextRequest, user: Authentica
       [endeavor_id || null, type || 'metis', content]
     )
 
-    return NextResponse.json(rows[0], { status: 201 })
+    const candidate = rows[0]
+    return NextResponse.json({ ...candidate, candidate_id: candidate.id }, { status: 201 })
   } catch (error) {
     console.error('Create candidate error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
