@@ -22,5 +22,5 @@ None. If someone wants strict hierarchy enforcement, they build it in the applic
 
 ## Evidence
 
-Theron's real Nvidia strategy has cross-cutting capabilities. A strict tree would force
+Real-world strategy graphs have cross-cutting capabilities. A strict tree would force
 false choices about where to put them.
