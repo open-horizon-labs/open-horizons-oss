@@ -1,12 +1,23 @@
 /**
  * API Test Harness
- * Manages starting/stopping the Next.js app for real API testing
+ * Manages starting/stopping the Next.js app for real API testing.
+ *
+ * When Jest globalSetup is used (the default for `pnpm test:api`), the server
+ * is already running and the harness reads the port from a shared info file.
+ * `startApp()` and `stopApp()` become no-ops in that mode.
+ *
+ * For backwards compatibility, if no shared server is detected and no
+ * TEST_API_BASE_URL is set, the harness falls back to spawning its own
+ * `next dev` process (the legacy behaviour).
  */
 
 import { spawn, ChildProcess } from 'child_process'
 import { setTimeout as delay } from 'timers/promises'
 import { join } from 'path'
 import { writeFileSync, readFileSync, existsSync } from 'fs'
+
+// Path to the file written by global-setup.js
+const SERVER_INFO_FILE = join(__dirname, '../../.api-test-server.json')
 
 // Create a wrapper for fetch that ensures proper response structure
 async function httpFetch(url: string, options?: any): Promise<any> {
@@ -38,14 +49,24 @@ export interface TestHarnessConfig {
 export class ApiTestHarness {
   private appProcess: ChildProcess | null = null
   private config: TestHarnessConfig
+  private usingSharedServer: boolean = false
 
   constructor(config: Partial<TestHarnessConfig> = {}) {
+    // Check for shared server from globalSetup first
+    const sharedPort = this.readSharedServerPort()
+
     this.config = {
-      port: this.findAvailablePort(),
+      port: sharedPort || config.port || this.findAvailablePort(),
       timeout: 10000, // 10 seconds
       retries: 30,
       retryDelay: 300, // 300ms
       ...config
+    }
+
+    // Override port if shared server or env var is available
+    if (sharedPort) {
+      this.config.port = sharedPort
+      this.usingSharedServer = true
     }
 
     // If TEST_API_BASE_URL is provided, extract port from it
@@ -55,8 +76,26 @@ export class ApiTestHarness {
       if (port && port > 0) {
         console.log(`Using external test API at ${process.env.TEST_API_BASE_URL}`)
         this.config.port = port
+        this.usingSharedServer = true
       }
     }
+  }
+
+  /**
+   * Read the port from the shared server info file written by global-setup.js
+   */
+  private readSharedServerPort(): number | null {
+    try {
+      if (existsSync(SERVER_INFO_FILE)) {
+        const info = JSON.parse(readFileSync(SERVER_INFO_FILE, 'utf8'))
+        if (info.port && info.port > 0) {
+          return info.port
+        }
+      }
+    } catch {
+      // File doesn't exist or is invalid -- fall through
+    }
+    return null
   }
 
   /**
@@ -128,9 +167,17 @@ export class ApiTestHarness {
   }
 
   /**
-   * Start the Next.js app on the configured port
+   * Start the Next.js app on the configured port.
+   *
+   * When a shared server is already running (globalSetup or TEST_API_BASE_URL),
+   * this is a no-op.
    */
   async startApp(): Promise<void> {
+    if (this.usingSharedServer) {
+      // Server is managed externally -- nothing to do
+      return
+    }
+
     // Check if port is already in use
     const portInUse = await this.isPortInUse(this.config.port)
     if (portInUse) {
@@ -210,12 +257,13 @@ export class ApiTestHarness {
     let retries = this.config.retries
     while (retries > 0) {
       try {
-        const response = await realFetch(`http://localhost:${this.config.port}/api/status`)
-        if (response.ok) {
-          return
-        }
+        // Any HTTP response (even 500) means the server is accepting connections.
+        // A 500 from /api/status typically means DATABASE_URL isn't set, but the
+        // server itself is ready to handle requests.
+        await realFetch(`http://localhost:${this.config.port}/api/status`)
+        return
       } catch (error) {
-        // Expected during startup
+        // Connection refused -- server not ready yet
       }
 
       retries--
@@ -228,9 +276,17 @@ export class ApiTestHarness {
   }
 
   /**
-   * Stop the app and clean up
+   * Stop the app and clean up.
+   *
+   * When a shared server is running (globalSetup or TEST_API_BASE_URL),
+   * this is a no-op -- the server is stopped in globalTeardown.
    */
   async stopApp(): Promise<void> {
+    if (this.usingSharedServer) {
+      // Server is managed externally -- nothing to do
+      return
+    }
+
     if (!this.appProcess) {
       return
     }
