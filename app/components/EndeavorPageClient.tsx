@@ -54,10 +54,7 @@ export function EndeavorPageClient({
   const router = useRouter()
   const [showChangeParentModal, setShowChangeParentModal] = useState(false)
 
-<<<<<<< HEAD
-=======
   // Auto-switch user's context when viewing cross-context endeavors
->>>>>>> origin/simplify-ui
   useEffect(() => {
     if (urlContextId && urlContextId !== selectedContextId) {
       localStorage.setItem('selectedContextId', urlContextId)
@@ -65,173 +62,37 @@ export function EndeavorPageClient({
     }
   }, [urlContextId, selectedContextId])
 
-<<<<<<< HEAD
   const endeavor = nodes.find(n => n.id === id)
 
   if (!endeavor) {
-=======
-  // Check context availability
-  useEffect(() => {
-    const checkContextAvailability = async () => {
-      if (urlContextId) {
-        setContextAvailabilityChecked(true)
-        return
-      }
-
-      const endeavor = nodes.find(n => n.id === id)
-
-      if (!endeavor) {
-        if (!effectiveContextId) {
-          await ensureNodeIncluded(id)
-        } else {
-          setShowNotFound(true)
-          setContextAvailabilityChecked(true)
-          return
-        }
-      }
-
-      setContextAvailabilityChecked(true)
-    }
-
-    checkContextAvailability()
-  }, [id, nodes, effectiveContextId, urlContextId, ensureNodeIncluded])
-
-  // Listen for context changes
-  useEffect(() => {
-    const handleContextChange = () => {
-      setContextAvailabilityChecked(false)
-      setShowNotFound(false)
-    }
-
-    window.addEventListener('contextChanged', handleContextChange)
-    return () => window.removeEventListener('contextChanged', handleContextChange)
-  }, [id])
-
-  const endeavor = nodes.find(n => n.id === id)
-
-  if (showNotFound) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center">
-          <div className="mb-8">
-            <h1 className="text-6xl font-bold text-gray-300">404</h1>
-            <h2 className="text-2xl font-semibold text-gray-900 mt-4">Endeavor Not Available</h2>
-            <p className="text-gray-600 mt-2">
-              This endeavor isn&apos;t available in the current context.
-            </p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Return to Dashboard
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!contextAvailabilityChecked || !endeavor) {
->>>>>>> origin/simplify-ui
     return <div>Loading endeavor...</div>
   }
 
   return (
     <div className="space-y-6">
-<<<<<<< HEAD
-      <div>
-        <div className="flex items-center gap-4 mb-2">
-          <ContextBreadcrumb contextId={effectiveContextId} />
-        </div>
-
-        <nav className="text-sm text-gray-600 mb-2 flex flex-wrap items-center gap-1">
-          {buildContextAwareBreadcrumbs(endeavor, nodes).map((ancestor) => (
-            <span key={ancestor.id}>
-              <Link href={getEndeavorLink(ancestor.id, date)} className="hover:underline">
-                {ancestor.title || ancestor.id}
-              </Link>
-              <span className="mx-2">&rarr;</span>
-            </span>
-          ))}
-          <span className="font-medium">{endeavor.title || endeavor.id}</span>
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold">{endeavor.title || endeavor.id}</h1>
-          <CopyShortId id={id} />
-        </div>
-
-        {endeavor.node_type?.toLowerCase() !== 'mission' && (
-          <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
-            <span>Parent:</span>
-            {endeavor.parent_id ? (
-              (() => {
-                const parentNode = nodes.find(n => n.id === endeavor.parent_id)
-                return parentNode ? (
-                  <Link href={getEndeavorLink(parentNode.id, date)} className="text-blue-600 hover:underline">
-                    {parentNode.title || parentNode.id}
-                  </Link>
-                ) : (
-                  <span className="text-gray-400">{endeavor.parent_id}</span>
-                )
-              })()
-            ) : (
-              <span className="text-gray-400 italic">None (root level)</span>
-            )}
-            <button
-              onClick={() => setShowChangeParentModal(true)}
-              className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              [Edit]
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="border rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
-        <AutoSaveEditor
-          initialValue={endeavor.description || ''}
-          onSave={async (value) => {
-            await fetch(`/api/endeavors/${encodeURIComponent(id)}/description`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ description: value })
-            })
-          }}
-        />
-      </div>
-=======
       <div className="flex items-center justify-between">
         <div>
-          {/* Context indicators */}
           <div className="flex items-center gap-4 mb-2">
             <ContextBreadcrumb contextId={effectiveContextId} />
           </div>
 
-          {/* Breadcrumb navigation */}
           <nav className="text-sm text-gray-600 mb-2 flex flex-wrap items-center gap-1">
-            {(() => {
-              const breadcrumbs = buildContextAwareBreadcrumbs(endeavor, nodes)
-              return breadcrumbs.map((ancestor) => (
-                <span key={ancestor.id}>
-                  <Link href={getEndeavorLink(ancestor.id, date)} className="hover:underline">
-                    {ancestor.title || ancestor.id}
-                  </Link>
-                  <span className="mx-2">&rarr;</span>
-                </span>
-              ))
-            })()}
-            <Link href={getEndeavorLink(id, date)} className="hover:underline">{endeavor.title || endeavor.id}</Link>
+            {buildContextAwareBreadcrumbs(endeavor, nodes).map((ancestor) => (
+              <span key={ancestor.id}>
+                <Link href={getEndeavorLink(ancestor.id, date)} className="hover:underline">
+                  {ancestor.title || ancestor.id}
+                </Link>
+                <span className="mx-2">&rarr;</span>
+              </span>
+            ))}
+            <span className="font-medium">{endeavor.title || endeavor.id}</span>
           </nav>
+
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold">
-              {endeavor.title || endeavor.id}
-            </h1>
+            <h1 className="text-2xl font-semibold">{endeavor.title || endeavor.id}</h1>
             <CopyShortId id={id} />
           </div>
 
-          {/* Parent section - show for non-Missions */}
           {endeavor.node_type?.toLowerCase() !== 'mission' && (
             <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
               <span>Parent:</span>
@@ -239,10 +100,7 @@ export function EndeavorPageClient({
                 (() => {
                   const parentNode = nodes.find(n => n.id === endeavor.parent_id)
                   return parentNode ? (
-                    <Link
-                      href={getEndeavorLink(parentNode.id, date)}
-                      className="text-blue-600 hover:underline"
-                    >
+                    <Link href={getEndeavorLink(parentNode.id, date)} className="text-blue-600 hover:underline">
                       {parentNode.title || parentNode.id}
                     </Link>
                   ) : (
@@ -252,26 +110,22 @@ export function EndeavorPageClient({
               ) : (
                 <span className="text-gray-400 italic">None (root level)</span>
               )}
-              {!endeavor.archived_at && (
-                <button
-                  onClick={() => setShowChangeParentModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  [Edit]
-                </button>
-              )}
+              <button
+                onClick={() => setShowChangeParentModal(true)}
+                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                [Edit]
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Endeavor detail with description editor */}
       <EndeavorDetailClient
         node={endeavor as any}
         allNodes={nodes as any}
         userId={userId}
       />
->>>>>>> origin/simplify-ui
 
       <ChangeParentModal
         visible={showChangeParentModal}

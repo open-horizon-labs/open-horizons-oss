@@ -280,9 +280,9 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
   // 🚨 CONTRACT-FIRST UI: Use contract helpers for type safety
   // Group nodes by type for display using contract-validated data
   // Tasks are not displayed as separate cards - they appear nested in parent endeavor cards
-  const missions = filterNodesByType(filteredNodes, DatabaseNodeType.enum.Mission)
-  const aims = filterNodesByType(filteredNodes, DatabaseNodeType.enum.Aim)
-  const initiatives = filterNodesByType(filteredNodes, DatabaseNodeType.enum.Initiative)
+  const missions = filterNodesByType(filteredNodes, 'Mission')
+  const aims = filterNodesByType(filteredNodes, 'Aim')
+  const initiatives = filterNodesByType(filteredNodes, 'Initiative')
 
 
   // Don't render until we've loaded from localStorage to prevent hydration mismatch
@@ -565,7 +565,7 @@ function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarch
                 
                 <div className="flex items-center gap-1">
                   {/* Hierarchical creation buttons - strict hierarchy */}
-                  {node.node_type === DatabaseNodeType.enum.Mission && (
+                  {node.node_type === 'Mission' && (
                     <button
                       onClick={() => openCreateModal('aim', node.id)}
                       className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-xs font-medium"
@@ -575,7 +575,7 @@ function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarch
                       +Aim
                     </button>
                   )}
-                  {node.node_type === DatabaseNodeType.enum.Aim && (
+                  {node.node_type === 'Aim' && (
                     <button
                       onClick={() => openCreateModal('initiative', node.id)}
                       className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded text-xs font-medium"
@@ -601,7 +601,7 @@ function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarch
 
               {/* Show non-task children as badges */}
               {(() => {
-                const nonTaskChildren = children.filter(child => child.node_type !== DatabaseNodeType.enum.Task)
+                const nonTaskChildren = children.filter(child => child.node_type !== 'Task')
                 return nonTaskChildren.length > 0 ? (
                   <div className="mt-3 pt-2 border-t border-gray-100">
                     <div className="flex flex-wrap gap-2">

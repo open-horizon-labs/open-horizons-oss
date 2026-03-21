@@ -48,39 +48,22 @@ function getSchemas() {
 }
 
 /** User input node types (slugs - what users send, e.g. "mission", "strategic_bet") */
-export const UserNodeType: z.ZodEnum<[string, ...string[]]> = z.lazy(() => getSchemas().userSchema) as unknown as z.ZodEnum<[string, ...string[]]>
+export const UserNodeType = z.string().refine(
+  (val) => getActiveConfig().nodeTypes.some(nt => nt.slug === val),
+  { message: 'Invalid node type slug' }
+)
 export type UserNodeType = string
 
 /** Database node types (names - stored format, e.g. "Mission", "Strategic Bet") */
-export const DatabaseNodeType: z.ZodEnum<[string, ...string[]]> = z.lazy(() => getSchemas().dbSchema) as unknown as z.ZodEnum<[string, ...string[]]>
+export const DatabaseNodeType = z.string().refine(
+  (val) => getActiveConfig().nodeTypes.some(nt => nt.name === val),
+  { message: 'Invalid node type name' }
+)
 export type DatabaseNodeType = string
 
 /** API response node types (same as database format) */
 export const ApiNodeType = DatabaseNodeType
 export type ApiNodeType = DatabaseNodeType
-
-/**
- * Expose the enum-like `.enum` accessor that existing code uses
- * (e.g. `DatabaseNodeType.enum.Mission`).
- *
- * We build a proxy object so any valid name resolves to itself.
- */
-function buildEnumProxy(values: string[]): Record<string, string> {
-  const obj: Record<string, string> = {}
-  for (const v of values) obj[v] = v
-  return obj
-}
-
-// Attach .enum to the Zod schema objects so existing code like
-// `DatabaseNodeType.enum.Mission` still works.
-;(DatabaseNodeType as any).enum = new Proxy(
-  buildEnumProxy(getActiveConfig().nodeTypes.map(nt => nt.name)),
-  { get: (target, prop) => target[prop as string] }
-)
-;(UserNodeType as any).enum = new Proxy(
-  buildEnumProxy(getActiveConfig().nodeTypes.map(nt => nt.slug)),
-  { get: (target, prop) => target[prop as string] }
-)
 
 // Transform functions (centralized, tested)
 export function userToDbNodeType(userSlug: UserNodeType): DatabaseNodeType {
@@ -114,7 +97,7 @@ export const CreateEndeavorRequest = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title too long'),
   type: z.string().refine(
     (val) => getActiveConfig().nodeTypes.some(nt => nt.slug === val),
-    (val) => ({ message: `Invalid node type "${val}". Valid types: ${getActiveConfig().nodeTypes.map(nt => nt.slug).join(', ')}` })
+    { message: 'Invalid node type' }
   ),
   contextId: z.string().optional().nullable(),
   parentId: z.string().optional().nullable()
@@ -174,7 +157,7 @@ export const GraphNode = z.object({
   id: z.string(),
   node_type: z.string().refine(
     (val) => getActiveConfig().nodeTypes.some(nt => nt.name === val),
-    (val) => ({ message: `Invalid node type "${val}". Valid types: ${getActiveConfig().nodeTypes.map(nt => nt.name).join(', ')}` })
+    { message: 'Invalid node type' }
   ),
   parent_id: z.string().nullable(),
   title: z.string(),

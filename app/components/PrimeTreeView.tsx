@@ -356,7 +356,7 @@ export function PrimeTreeView({ allNodes, currentNodeId, date, currentBody = '',
           const currentEndeavor = filteredNodes.find(n => n.id === currentNodeId)
           if (!currentEndeavor || !onCreateChild) return null
 
-          const allowedChildTypes = getValidChildTypes(currentEndeavor.node_type as DatabaseNodeType).filter(type => type !== DatabaseNodeType.enum.Task)
+          const allowedChildTypes = getValidChildTypes(currentEndeavor.node_type as DatabaseNodeType).filter(type => type !== 'Task')
           if (allowedChildTypes.length === 0) return null
 
           return (
@@ -618,12 +618,12 @@ export function CompactTreeView({
               <span className="text-sm">{getRoleIcon(node.nodeData.node_type)}</span>
 
               {/* Show completion status for archived tasks */}
-              {node.nodeData.node_type === DatabaseNodeType.enum.Task && node.nodeData.archived_at && (
+              {node.nodeData.node_type === 'Task' && node.nodeData.archived_at && (
                 <span className="text-xs text-green-600">✅</span>
               )}
 
               {/* Title editing for tasks */}
-              {node.nodeData.node_type === DatabaseNodeType.enum.Task && editingTitles.has(node.id) ? (
+              {node.nodeData.node_type === 'Task' && editingTitles.has(node.id) ? (
                 <div className="flex items-center gap-1 flex-1">
                   <input
                     type="text"
@@ -682,7 +682,7 @@ export function CompactTreeView({
             {/* Action buttons */}
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               {/* Task-specific controls */}
-              {node.nodeData.node_type === DatabaseNodeType.enum.Task && !node.nodeData.archivedAt && (
+              {node.nodeData.node_type === 'Task' && !node.nodeData.archivedAt && (
                 <>
                   {/* Edit title button */}
                   {!editingTitles.has(node.id) && (
@@ -746,7 +746,7 @@ export function CompactTreeView({
 
   // Get current endeavor for +child buttons
   const currentEndeavor = filteredNodes.find(n => n.id === currentNodeId)
-  const allowedChildTypes = currentEndeavor ? getValidChildTypes(currentEndeavor.node_type as DatabaseNodeType).filter(type => type !== DatabaseNodeType.enum.Task) : []
+  const allowedChildTypes = currentEndeavor ? getValidChildTypes(currentEndeavor.node_type as DatabaseNodeType).filter(type => type !== 'Task') : []
 
   return (
     <div className="space-y-2">

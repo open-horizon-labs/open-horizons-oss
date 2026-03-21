@@ -9,13 +9,13 @@ import { getActiveConfig } from '../config'
 // Valid node types that users can specify (slugs) - from config
 export const UserNodeTypeSchema = z.string().refine(
   (val) => getActiveConfig().nodeTypes.some(nt => nt.slug === val),
-  (val) => ({ message: `Invalid user node type "${val}"` })
+  { message: 'Invalid user node type' }
 )
 
 // Valid node types in database (names) - from config
 export const DatabaseNodeTypeSchema = z.string().refine(
   (val) => getActiveConfig().nodeTypes.some(nt => nt.name === val),
-  (val) => ({ message: `Invalid database node type "${val}"` })
+  { message: 'Invalid database node type' }
 )
 
 // User input for creating endeavors
