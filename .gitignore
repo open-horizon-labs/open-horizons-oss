@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# next.js
+.next/
+out/
+
+# build
+dist/
+*.tsbuildinfo
+
+# env
+.env*.local
+.env*.local.*
+
+# supabase
+supabase/.temp/
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+*.swp
+*.swo
+.turbo/
+.swc/
+
+# test
+.api-test.port
+deployment-logs/
+
+# IDE
+.idea/
+.vscode/

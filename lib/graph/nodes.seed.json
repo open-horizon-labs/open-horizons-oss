@@ -1,0 +1,65 @@
+[
+  {
+    "id": "oh:mission/open-horizons",
+    "rdfType": "Mission",
+    "title": "Open Horizons App",
+    "tags": ["#OH", "#App"]
+  },
+  {
+    "id": "oh:mission/meta",
+    "rdfType": "Mission",
+    "title": "Establish Operating System",
+    "tags": ["#Meta", "#OS"]
+  },
+  {
+    "id": "oh:aim/meta-define-mission-aims",
+    "rdfType": "Aim",
+    "parent": "oh:mission/meta",
+    "title": "Define Mission and Aims"
+  },
+  {
+    "id": "oh:aim/meta-document-strengths",
+    "rdfType": "Aim",
+    "parent": "oh:mission/meta",
+    "title": "Document Strengths"
+  },
+  {
+    "id": "oh:aim/meta-catalogue-achievements",
+    "rdfType": "Aim",
+    "parent": "oh:mission/meta",
+    "title": "Catalogue Achievements"
+  },
+  {
+    "id": "oh:init/meta-graph",
+    "rdfType": "Initiative",
+    "parent": "oh:aim/meta-define-mission-aims",
+    "title": "Seed Node Graph"
+  },
+  {
+    "id": "oh:aim/app-mvp",
+    "rdfType": "Aim",
+    "parent": "oh:mission/open-horizons",
+    "title": "MVP",
+    "tags": ["#Aim/App/MVP"]
+  },
+  {
+    "id": "oh:init/daily-ritual",
+    "rdfType": "Initiative",
+    "parent": "oh:aim/app-mvp",
+    "title": "Daily Ritual"
+  },
+  {
+    "id": "oh:task/review-panel",
+    "rdfType": "Task",
+    "parent": "oh:init/daily-ritual",
+    "title": "Review Panel"
+  },
+  {
+    "id": "oh:ritual/daily",
+    "rdfType": "Ritual",
+    "parent": "oh:init/daily-ritual",
+    "title": "Daily Review",
+    "practices": "Write, reflect, plan",
+    "frequency": "daily"
+  }
+]
