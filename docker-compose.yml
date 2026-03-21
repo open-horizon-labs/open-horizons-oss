@@ -23,8 +23,6 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://oh_user:oh_password@db:5432/open_horizons
-      STRATEGY_PRESET: ${STRATEGY_PRESET:-open-horizons}
-      NEXT_PUBLIC_STRATEGY_PRESET: ${STRATEGY_PRESET:-open-horizons}
     depends_on:
       db:
         condition: service_healthy

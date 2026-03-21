@@ -162,7 +162,7 @@ export function DashboardPageClient({ searchParams }: DashboardPageClientProps) 
         <div className="flex-1 min-w-0">
           <div>
             <h1 className="text-2xl font-semibold">Strategy Graph</h1>
-            <p className="text-gray-700 mt-1">View and manage your aim hierarchy.</p>
+            <p className="text-gray-700 mt-1">View and manage your strategy graph.</p>
           </div>
 
           <div className="flex items-center gap-2 mt-3 min-w-0">
