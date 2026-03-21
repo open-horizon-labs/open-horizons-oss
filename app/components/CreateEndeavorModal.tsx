@@ -1,20 +1,22 @@
 'use client'
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { GraphNode, UserNodeType } from '../../lib/contracts/endeavor-contract'
+import { GraphNode } from '../../lib/contracts/endeavor-contract'
 import { ContextNode } from '../../lib/contexts/context-operations'
 import { getRoleIcon } from '../../lib/constants/icons'
 import { TreeSelect } from 'primereact/treeselect'
 import { Dropdown } from 'primereact/dropdown'
+import { getActiveConfig } from '../../lib/config'
+import { getValidParentTypes } from '../../lib/graph/types'
 
 interface CreateEndeavorModalProps {
   isOpen: boolean
   onClose: () => void
-  defaultType?: UserNodeType
+  defaultType?: string
   defaultParentId?: string
   contextId?: string | null
   allNodes: GraphNode[]
-  onCreateEndeavor: (title: string, type: UserNodeType, parentId: string) => Promise<void>
+  onCreateEndeavor: (title: string, type: string, parentId: string) => Promise<void>
   loading?: boolean
 }
 
@@ -31,6 +33,7 @@ export function CreateEndeavorModal({
   const [title, setTitle] = useState('')
   const [selectedParentId, setSelectedParentId] = useState<string>(defaultParentId || '')
   const initializedRef = useRef(false)
+  const config = getActiveConfig()
 
   // Reset form when modal opens/closes or defaults change
   useEffect(() => {
@@ -41,11 +44,19 @@ export function CreateEndeavorModal({
     }
   }, [isOpen, defaultParentId, contextId])
 
+  // Resolve defaultType to DB name for display
+  const defaultTypeConfig = config.nodeTypes.find(nt => nt.slug === defaultType || nt.name === defaultType)
+  const displayTypeName = defaultTypeConfig?.name || defaultType
+
   // Tree data for TreeSelect - context-aware hierarchical structure
   const treeData = useMemo(() => {
-    // Simple parent type validation - missions can have no parent, others can have any parent
-    // Exclude tasks from being selectable as parents - they should only be children
-    const validParentTypes = defaultType === 'mission' ? [] : ['mission', 'aim', 'initiative', 'ritual', 'strength', 'achievement']
+    // Get valid parent types from config (using DB name format)
+    const validParentTypeNames = getValidParentTypes(displayTypeName)
+    // Also accept slug-based lookups
+    const validParentTypeSlugs = validParentTypeNames.map(name => {
+      const nt = config.nodeTypes.find(n => n.name === name)
+      return nt?.slug || name.toLowerCase()
+    })
 
     // If we have a specific defaultParentId, ensure that node is included regardless of type restrictions
     let parentNodeToInclude = null
@@ -56,14 +67,16 @@ export function CreateEndeavorModal({
     // Filter nodes based on current context
     let contextFilteredNodes = allNodes
     if (contextId && contextId !== 'personal') {
-      // For shared contexts, we would need context-aware filtering
-      // For now, show all nodes - this can be enhanced later with proper context filtering
       contextFilteredNodes = allNodes
     }
 
-    let potentialParents = contextFilteredNodes.filter(node =>
-      validParentTypes.includes(node.node_type.toLowerCase()) && !node.archived_at
-    )
+    let potentialParents = contextFilteredNodes.filter(node => {
+      const nodeTypeLower = node.node_type.toLowerCase()
+      return (
+        validParentTypeNames.includes(node.node_type) ||
+        validParentTypeSlugs.includes(nodeTypeLower)
+      ) && !node.archived_at
+    })
 
     // Ensure the defaultParentId node is always included if it exists
     if (parentNodeToInclude && !potentialParents.some(p => p.id === parentNodeToInclude.id)) {
@@ -87,7 +100,7 @@ export function CreateEndeavorModal({
     )
 
     return rootNodes.map(buildTreeNode)
-  }, [defaultType, allNodes, contextId, defaultParentId])
+  }, [defaultType, displayTypeName, allNodes, contextId, defaultParentId, config])
 
   // Helper function to check if a key exists in tree
   const findKeyInTree = useCallback((nodes: any[], key: string): boolean => {
@@ -137,7 +150,7 @@ export function CreateEndeavorModal({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium flex items-center gap-2">
               <span>{getRoleIcon(defaultType)}</span>
-              Create New {defaultType.charAt(0).toUpperCase() + defaultType.slice(1)}
+              Create New {displayTypeName}
             </h2>
             <button
               onClick={handleCancel}
@@ -188,7 +201,7 @@ export function CreateEndeavorModal({
                 />
               ) : (
                 <div className="p-2 border rounded bg-gray-50 text-gray-500 text-sm">
-                  No valid parents found for {defaultType}
+                  No valid parents found for {displayTypeName}
                 </div>
               )}
             </div>
@@ -199,7 +212,7 @@ export function CreateEndeavorModal({
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium disabled:opacity-50"
                 disabled={!title.trim() || loading}
               >
-                {loading ? 'Creating...' : `Create ${defaultType.charAt(0).toUpperCase() + defaultType.slice(1)}`}
+                {loading ? 'Creating...' : `Create ${displayTypeName}`}
               </button>
               <button
                 type="button"

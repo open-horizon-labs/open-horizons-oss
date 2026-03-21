@@ -1,45 +1,41 @@
-import { DatabaseNodeType, GraphNode as ContractGraphNode } from '../contracts/endeavor-contract'
+import { GraphNode as ContractGraphNode } from '../contracts/endeavor-contract'
+import { getActiveConfig, getValidChildNames, getValidParentNames, getLeafTypes, getNodeTypeByName } from '../config'
 
 // Re-export the contract GraphNode as the single source of truth
 export type GraphNode = ContractGraphNode
 
-// Helper functions to work with the hierarchy using contract enums
-export function getCoreRdfTypes(): DatabaseNodeType[] {
-  return [DatabaseNodeType.enum.Mission, DatabaseNodeType.enum.Aim, DatabaseNodeType.enum.Initiative, DatabaseNodeType.enum.Task]
+// Helper functions to work with the hierarchy using the active config
+
+/** Get all configured node type names (DB format) */
+export function getCoreRdfTypes(): string[] {
+  return getActiveConfig().nodeTypes.map(nt => nt.name)
 }
 
-export function getValidChildTypes(parentType: DatabaseNodeType): DatabaseNodeType[] {
-  // Simple hierarchy: mission -> aim -> initiative -> task
-  switch (parentType) {
-    case DatabaseNodeType.enum.Mission: return [DatabaseNodeType.enum.Aim]
-    case DatabaseNodeType.enum.Aim: return [DatabaseNodeType.enum.Initiative]
-    case DatabaseNodeType.enum.Initiative: return [DatabaseNodeType.enum.Task]
-    case DatabaseNodeType.enum.Task: return []
-    default: return []
-  }
+/** Get valid child type names for a parent type (reads from config) */
+export function getValidChildTypes(parentType: string): string[] {
+  return getValidChildNames(getActiveConfig(), parentType)
 }
 
-export function getValidParentTypes(childType: DatabaseNodeType): DatabaseNodeType[] {
-  // Simple hierarchy: task <- initiative <- aim <- mission
-  switch (childType) {
-    case DatabaseNodeType.enum.Aim: return [DatabaseNodeType.enum.Mission]
-    case DatabaseNodeType.enum.Initiative: return [DatabaseNodeType.enum.Aim]
-    case DatabaseNodeType.enum.Task: return [DatabaseNodeType.enum.Initiative]
-    case DatabaseNodeType.enum.Mission: return []
-    default: return []
-  }
+/** Get valid parent type names for a child type (reads from config) */
+export function getValidParentTypes(childType: string): string[] {
+  return getValidParentNames(getActiveConfig(), childType)
 }
 
-export function isValidRdfType(type: string): type is DatabaseNodeType {
-  return type === DatabaseNodeType.enum.Mission || type === DatabaseNodeType.enum.Aim || type === DatabaseNodeType.enum.Initiative || type === DatabaseNodeType.enum.Task
+/** Check if a string is a valid node type name in the current config */
+export function isValidRdfType(type: string): boolean {
+  return getNodeTypeByName(getActiveConfig(), type) !== undefined
 }
 
-export function isCoreRdfType(type: DatabaseNodeType): boolean {
-  return type === DatabaseNodeType.enum.Mission || type === DatabaseNodeType.enum.Aim || type === DatabaseNodeType.enum.Initiative || type === DatabaseNodeType.enum.Task
+/** Check if a type is a configured core type (always true for configured types) */
+export function isCoreRdfType(type: string): boolean {
+  return isValidRdfType(type)
 }
 
-export function isLeafType(type: DatabaseNodeType): boolean {
-  return type === DatabaseNodeType.enum.Task
+/** Check if a type is a leaf type (no valid children) */
+export function isLeafType(type: string): boolean {
+  const config = getActiveConfig()
+  const leaves = getLeafTypes(config)
+  return leaves.some(nt => nt.name === type)
 }
 
 export interface Endeavor {

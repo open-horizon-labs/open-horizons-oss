@@ -1,34 +1,39 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { DatabaseNodeType } from '../../lib/contracts/endeavor-contract'
 import { SingleRoleChip } from './NodeTypeChips'
+import { getActiveConfig } from '../../lib/config'
 
 interface LensFilterProps {
-  selectedRoles: DatabaseNodeType[]
-  onRoleToggle: (role: DatabaseNodeType) => void
+  selectedRoles: string[]
+  onRoleToggle: (role: string) => void
   onClear: () => void
-  availableRoles?: DatabaseNodeType[]
+  availableRoles?: string[]
   compact?: boolean
 }
 
-
-const LENS_DESCRIPTIONS: Record<string, string> = {
-  [DatabaseNodeType.enum.Mission.toLowerCase()]: 'High-level purpose and direction',
-  [DatabaseNodeType.enum.Aim.toLowerCase()]: 'Strategic objectives and outcomes',
-  [DatabaseNodeType.enum.Initiative.toLowerCase()]: 'Active projects and endeavors',
-  [DatabaseNodeType.enum.Task.toLowerCase()]: 'Specific actionable items',
+function getDefaultAvailableRoles(): string[] {
+  return getActiveConfig().nodeTypes.map(nt => nt.name)
 }
 
-export function LensFilter({ 
-  selectedRoles, 
-  onRoleToggle, 
+function getLensDescriptions(): Record<string, string> {
+  const descriptions: Record<string, string> = {}
+  for (const nt of getActiveConfig().nodeTypes) {
+    descriptions[nt.name.toLowerCase()] = nt.description
+  }
+  return descriptions
+}
+
+export function LensFilter({
+  selectedRoles,
+  onRoleToggle,
   onClear,
-  availableRoles = [DatabaseNodeType.enum.Mission, DatabaseNodeType.enum.Aim, DatabaseNodeType.enum.Initiative, DatabaseNodeType.enum.Task],
-  compact = false 
+  availableRoles = getDefaultAvailableRoles(),
+  compact = false
 }: LensFilterProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const lensDescriptions = getLensDescriptions()
 
   // Handle click outside
   useEffect(() => {
@@ -68,15 +73,15 @@ export function LensFilter({
         className={`
           inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium
           transition-colors
-          ${hasActiveFilter 
-            ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' 
+          ${hasActiveFilter
+            ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
             : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
           }
         `}
       >
         {/* Lens Icon */}
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
         </svg>
 
@@ -87,7 +92,7 @@ export function LensFilter({
         )}
 
         {/* Chevron */}
-        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
              fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -97,9 +102,9 @@ export function LensFilter({
       {hasActiveFilter && !isOpen && (
         <div className="mt-2 flex flex-wrap gap-1">
           {selectedRoles.map(role => (
-            <SingleRoleChip 
-              key={role} 
-              role={role} 
+            <SingleRoleChip
+              key={role}
+              role={role}
               compact={compact}
               onClick={() => onRoleToggle(role)}
             />
@@ -109,7 +114,7 @@ export function LensFilter({
             className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
             title="Clear all filters"
           >
-            ✕ Clear
+            Clear
           </button>
         </div>
       )}
@@ -136,8 +141,8 @@ export function LensFilter({
                     className={`
                       w-full flex items-center justify-between p-2 rounded border text-sm
                       transition-colors text-left
-                      ${isSelected 
-                        ? 'bg-blue-50 border-blue-200 text-blue-800' 
+                      ${isSelected
+                        ? 'bg-blue-50 border-blue-200 text-blue-800'
                         : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                       }
                     `}
@@ -147,7 +152,7 @@ export function LensFilter({
                       <div>
                         <div className="font-medium capitalize">{role}</div>
                         <div className="text-xs text-gray-500">
-                          {LENS_DESCRIPTIONS[role]}
+                          {lensDescriptions[role.toLowerCase()] || ''}
                         </div>
                       </div>
                     </div>
@@ -193,17 +198,25 @@ export function LensFilter({
   )
 }
 
-// Preset lens configurations for common use cases
-export const PRESET_LENSES = {
-  strategic: [DatabaseNodeType.enum.Mission, DatabaseNodeType.enum.Aim],
-  tactical: [DatabaseNodeType.enum.Initiative, DatabaseNodeType.enum.Task],
-  all: [DatabaseNodeType.enum.Mission, DatabaseNodeType.enum.Aim, DatabaseNodeType.enum.Initiative, DatabaseNodeType.enum.Task]
+// Preset lens configurations derived from config
+function buildPresetLenses(): Record<string, string[]> {
+  const config = getActiveConfig()
+  const allNames = config.nodeTypes.map(nt => nt.name)
+  // Strategic = top half, Tactical = bottom half
+  const midpoint = Math.ceil(allNames.length / 2)
+  return {
+    strategic: allNames.slice(0, midpoint),
+    tactical: allNames.slice(midpoint),
+    all: allNames
+  }
 }
+
+export const PRESET_LENSES = buildPresetLenses()
 
 interface PresetLensButtonProps {
   preset: keyof typeof PRESET_LENSES
   label: string
-  onApply: (roles: DatabaseNodeType[]) => void
+  onApply: (roles: string[]) => void
   isActive: boolean
 }
 
@@ -213,8 +226,8 @@ export function PresetLensButton({ preset, label, onApply, isActive }: PresetLen
       onClick={() => onApply(PRESET_LENSES[preset])}
       className={`
         px-2 py-1 rounded text-xs font-medium transition-colors
-        ${isActive 
-          ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+        ${isActive
+          ? 'bg-blue-100 text-blue-800 border border-blue-200'
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         }
       `}
@@ -225,23 +238,23 @@ export function PresetLensButton({ preset, label, onApply, isActive }: PresetLen
 }
 
 interface LensPresetBarProps {
-  selectedRoles: DatabaseNodeType[]
-  onApplyPreset: (roles: DatabaseNodeType[]) => void
+  selectedRoles: string[]
+  onApplyPreset: (roles: string[]) => void
 }
 
 export function LensPresetBar({ selectedRoles, onApplyPreset }: LensPresetBarProps) {
   const isPresetActive = (preset: keyof typeof PRESET_LENSES) => {
     const presetRoles = PRESET_LENSES[preset]
-    return presetRoles.length === selectedRoles.length && 
+    return presetRoles.length === selectedRoles.length &&
            presetRoles.every(role => selectedRoles.includes(role))
   }
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <span className="text-sm text-gray-600 font-medium">Quick Lenses:</span>
-      <PresetLensButton 
-        preset="strategic" 
-        label="Strategic" 
+      <PresetLensButton
+        preset="strategic"
+        label="Strategic"
         onApply={onApplyPreset}
         isActive={isPresetActive('strategic')}
       />

@@ -1,8 +1,9 @@
-import { GraphNode, DatabaseNodeType } from '../contracts/endeavor-contract'
+import { GraphNode } from '../contracts/endeavor-contract'
+import { getActiveConfig } from '../config'
 
 export interface GraphMetrics {
   totalNodes: number
-  roleDistribution: Record<DatabaseNodeType, number>
+  roleDistribution: Record<string, number>
   components: string[][]
   centralityScores: Record<string, number>
 }
@@ -11,15 +12,13 @@ export function analyzeGraph(nodes: GraphNode[]): GraphMetrics {
   // Simplified analysis without edges - just basic node statistics
   const totalNodes = nodes.length
 
-  // Role distribution
-  const roleDistribution: Record<DatabaseNodeType, number> = {
-    Mission: 0,
-    Aim: 0,
-    Initiative: 0,
-    Task: 0
+  // Role distribution - initialise from config so all types appear
+  const roleDistribution: Record<string, number> = {}
+  for (const nt of getActiveConfig().nodeTypes) {
+    roleDistribution[nt.name] = 0
   }
   nodes.forEach(node => {
-    const role = node.node_type as DatabaseNodeType
+    const role = node.node_type
     roleDistribution[role] = (roleDistribution[role] || 0) + 1
   })
 

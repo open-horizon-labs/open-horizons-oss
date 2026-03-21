@@ -1,10 +1,10 @@
 'use client'
 
-import { DatabaseNodeType } from '../../lib/contracts/endeavor-contract'
-import { getRoleIcon, getRoleColor } from '../../lib/constants/icons'
+import { getRoleIcon } from '../../lib/constants/icons'
+import { getRoleHexColor } from '../../lib/constants/icons'
 
 interface NodeTypeChipProps {
-  nodeType: DatabaseNodeType
+  nodeType: string
   compact?: boolean
   onClick?: () => void
 }
@@ -15,7 +15,7 @@ export function NodeTypeChip({
   onClick
 }: NodeTypeChipProps) {
   const icon = getRoleIcon(nodeType)
-  const color = getRoleColor(nodeType)
+  const color = getRoleHexColor(nodeType)
 
   return (
     <span
@@ -40,8 +40,8 @@ export function RoleChips(_props: any) {
   return null
 }
 
-export function SingleRoleChip(_props: any) {
-  return null
+export function SingleRoleChip({ role, compact, onClick }: { role: string; compact?: boolean; onClick?: () => void }) {
+  return <NodeTypeChip nodeType={role} compact={compact} onClick={onClick} />
 }
 
 export function RolePicker(_props: any) {

@@ -1,28 +1,35 @@
-import { DatabaseNodeType } from '../contracts/endeavor-contract'
+import { getActiveConfig, getNodeTypeByName, getNodeTypeBySlug } from '../config'
 
-// Contract-based lookup tables using exact enum values as keys
-const ROLE_ICONS_MAP = {
-  [DatabaseNodeType.enum.Mission]: '🎯',
-  [DatabaseNodeType.enum.Aim]: '🏹',
-  [DatabaseNodeType.enum.Initiative]: '🚀',
-  [DatabaseNodeType.enum.Task]: '✓'
-} as const
-
-const ROLE_COLORS_MAP = {
-  [DatabaseNodeType.enum.Mission]: 'bg-purple-100 text-purple-800 border-purple-200',
-  [DatabaseNodeType.enum.Aim]: 'bg-blue-100 text-blue-800 border-blue-200',
-  [DatabaseNodeType.enum.Initiative]: 'bg-green-100 text-green-800 border-green-200',
-  [DatabaseNodeType.enum.Task]: 'bg-gray-100 text-gray-800 border-gray-200'
-} as const
-
-// Contract-enforced helper functions - only accept valid enum values
+/**
+ * Get the icon for a node type.
+ * Accepts either the DB name ("Mission") or slug ("mission").
+ * Falls back to a generic document icon for unknown types.
+ */
 export function getRoleIcon(role: string | undefined | null): string {
-  if (!role) return '📄'
-  return ROLE_ICONS_MAP[role as keyof typeof ROLE_ICONS_MAP] || '📄'
+  if (!role) return '\uD83D\uDCC4' // document emoji
+  const config = getActiveConfig()
+  const found = getNodeTypeByName(config, role) || getNodeTypeBySlug(config, role)
+  return found?.icon || '\uD83D\uDCC4'
 }
 
+/**
+ * Get the Tailwind chip classes for a node type.
+ * Accepts either the DB name ("Mission") or slug ("mission").
+ */
 export function getRoleColor(role: string | undefined | null): string {
   if (!role) return 'bg-gray-100 text-gray-800 border-gray-200'
-  return ROLE_COLORS_MAP[role as keyof typeof ROLE_COLORS_MAP] || 'bg-gray-100 text-gray-800 border-gray-200'
+  const config = getActiveConfig()
+  const found = getNodeTypeByName(config, role) || getNodeTypeBySlug(config, role)
+  return found?.chipClasses || 'bg-gray-100 text-gray-800 border-gray-200'
 }
 
+/**
+ * Get the hex color for a node type (useful for inline styles).
+ * Accepts either the DB name ("Mission") or slug ("mission").
+ */
+export function getRoleHexColor(role: string | undefined | null): string {
+  if (!role) return '#6b7280'
+  const config = getActiveConfig()
+  const found = getNodeTypeByName(config, role) || getNodeTypeBySlug(config, role)
+  return found?.color || '#6b7280'
+}

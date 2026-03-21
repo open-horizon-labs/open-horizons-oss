@@ -15,59 +15,34 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = join(__dirname, '..')
 
 /**
- * Extract contract constants programmatically using TypeScript AST
+ * Extract contract constants from strategy configuration presets.
+ *
+ * Node types are now defined in lib/config/presets/ rather than
+ * hardcoded as z.enum() in the contract file. We read the preset
+ * files and extract the `name` fields from nodeTypes arrays.
  */
 function extractContractConstants() {
-  const contractPath = join(rootDir, 'lib/contracts/endeavor-contract.ts')
-  const contractContent = readFileSync(contractPath, 'utf8')
-
-  const sourceFile = ts.createSourceFile(
-    contractPath,
-    contractContent,
-    ts.ScriptTarget.Latest,
-    true
-  )
-
   const constants = {
     nodeTypes: [],
     fieldNames: ['rdfType', 'parent_id', 'node_type'] // Known field patterns
   }
 
-  function extractZodEnumValues(node) {
-    // Look for z.enum(['value1', 'value2', ...])
-    if (ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        node.expression.name.text === 'enum' &&
-        node.arguments.length > 0 &&
-        ts.isArrayLiteralExpression(node.arguments[0])) {
-
-      return node.arguments[0].elements
-        .filter(ts.isStringLiteral)
-        .map(el => el.text)
+  // Read all preset files and extract node type names
+  const presetsDir = join(rootDir, 'lib/config/presets')
+  try {
+    const presetFiles = readdirSync(presetsDir).filter(f => f.endsWith('.ts'))
+    for (const file of presetFiles) {
+      const content = readFileSync(join(presetsDir, file), 'utf8')
+      // Extract name fields from nodeTypes array entries: name: 'Mission'
+      const nameMatches = content.matchAll(/name:\s*['"]([^'"]+)['"]/g)
+      for (const match of nameMatches) {
+        constants.nodeTypes.push(match[1])
+      }
     }
-    return []
+  } catch (e) {
+    // Fallback: if presets dir doesn't exist, try legacy AST extraction
+    console.log('  Note: Could not read presets directory, using fallback')
   }
-
-  function visit(node) {
-    // Find DatabaseNodeType = z.enum([...])
-    if (ts.isVariableStatement(node)) {
-      node.declarationList.declarations.forEach(declaration => {
-        if (ts.isIdentifier(declaration.name)) {
-          const varName = declaration.name.text
-          if (varName === 'DatabaseNodeType' || varName === 'ApiNodeType') {
-            if (declaration.initializer) {
-              const enumValues = extractZodEnumValues(declaration.initializer)
-              constants.nodeTypes.push(...enumValues)
-            }
-          }
-        }
-      })
-    }
-
-    ts.forEachChild(node, visit)
-  }
-
-  visit(sourceFile)
 
   // Remove duplicates
   constants.nodeTypes = [...new Set(constants.nodeTypes)]
