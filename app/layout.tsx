@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { ContextSwitcherWrapper } from './components/ContextSwitcherWrapper'
 import { GlobalContextAwareProvider } from './components/GlobalContextAwareProvider'
 import { QuickNav } from './components/QuickNav'
+import { Footer } from './components/Footer'
 
 export const metadata: Metadata = {
   title: 'Open Horizons',
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen font-sans antialiased bg-white text-gray-900">
+      <body className="min-h-screen flex flex-col font-sans antialiased bg-white text-gray-900">
         <GlobalContextAwareProvider>
           <header className="border-b bg-white/80 backdrop-blur">
             <div className="container mx-auto max-w-5xl px-4 h-14 flex items-center justify-between">
@@ -35,7 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
           </header>
-          <main className="container mx-auto max-w-5xl px-4 py-8">{children}</main>
+          <main className="container mx-auto max-w-5xl px-4 py-8 flex-1">{children}</main>
+          <Footer />
         </GlobalContextAwareProvider>
       </body>
     </html>

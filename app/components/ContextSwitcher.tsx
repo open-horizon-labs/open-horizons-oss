@@ -260,7 +260,7 @@ export function ContextSwitcher({ currentUserId, onContextChange }: ContextSwitc
           }}
           itemTemplate={contextItemTemplate}
           valueTemplate={contextValueTemplate}
-          className="w-48"
+          className="w-64"
           placeholder="Select context"
           showClear={false}
           optionLabel="label"
