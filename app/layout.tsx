@@ -1,7 +1,6 @@
 import './globals.css'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { SignOutButton } from './components/SignOutButton'
 import { UiModeProvider } from '../lib/ui/UiModeContext'
 import { CompactUiModeToggle } from './components/UiModeToggle'
 import { ContextSwitcherWrapper } from './components/ContextSwitcherWrapper'
@@ -9,8 +8,8 @@ import { GlobalContextAwareProvider } from './components/GlobalContextAwareProvi
 import { QuickNav } from './components/QuickNav'
 
 export const metadata: Metadata = {
-  title: 'Open Horizons — App',
-  description: 'Daily Review — Aim. Do. Reflect.'
+  title: 'Open Horizons',
+  description: 'Strategy graph for aims and initiatives'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +36,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <QuickNav />
                   <CompactUiModeToggle />
-                  <SignOutButton />
                 </div>
               </div>
             </header>

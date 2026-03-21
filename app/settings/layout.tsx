@@ -17,19 +17,9 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       icon: '⚙️'
     },
     {
-      name: 'Integrations',
-      href: '/settings/integrations',
-      icon: '🔗'
-    },
-    {
       name: 'Contexts',
       href: '/settings/contexts',
       icon: '👥'
-    },
-    {
-      name: 'API Keys',
-      href: '/settings/api-keys',
-      icon: '🔑'
     },
     {
       name: 'Import Data',

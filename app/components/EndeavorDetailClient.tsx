@@ -61,7 +61,7 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
       
       // Close modal and navigate to new endeavor
       setCreateChildModal({ isOpen: false })
-      window.location.href = `/artifacts/${encodeURIComponent(endeavorId)}`
+      window.location.href = `/endeavor/${encodeURIComponent(endeavorId)}`
     } catch (error) {
       console.error('Failed to create child:', error)
       alert('Failed to create endeavor: ' + (error instanceof Error ? error.message : String(error)))
@@ -105,7 +105,7 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
       }
       
       // Redirect to the newly created endeavor
-      window.location.href = `/artifacts/${encodeURIComponent(endeavorId)}`
+      window.location.href = `/endeavor/${encodeURIComponent(endeavorId)}`
     } else {
       // Update existing endeavor
       const response = await fetch(`/api/endeavors/${encodeURIComponent(node.id)}/description`, {
@@ -143,7 +143,7 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
         
         const { endeavorId } = await response.json()
         // Redirect to the newly created endeavor
-        window.location.href = `/artifacts/${encodeURIComponent(endeavorId)}`
+        window.location.href = `/endeavor/${encodeURIComponent(endeavorId)}`
       } else {
         // Update existing endeavor
         const response = await fetch(`/api/endeavors/${encodeURIComponent(node.id)}/title`, {
@@ -370,7 +370,7 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
                           <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
                             <span>{getRoleIcon(parentNode.node_type)}</span>
                             <a
-                              href={`/artifacts/${encodeURIComponent(parentNode.id)}`}
+                              href={`/endeavor/${encodeURIComponent(parentNode.id)}`}
                               className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                             >
                               {parentNode.title || parentNode.id}
@@ -513,7 +513,7 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
                         <div key={sibling.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
                           <span>{getRoleIcon(sibling.node_type)}</span>
                           <a 
-                            href={`/artifacts/${encodeURIComponent(sibling.id)}`}
+                            href={`/endeavor/${encodeURIComponent(sibling.id)}`}
                             className="text-blue-600 hover:text-blue-800 hover:underline font-medium flex-1"
                           >
                             {sibling.title || sibling.id}
