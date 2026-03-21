@@ -13,7 +13,7 @@ Two MCP servers are configured. Use them as your PRIMARY interface. Don't fall b
 | List workspaces | `oh_get_contexts` |
 | List endeavors | `oh_get_endeavors` |
 | Get endeavor + children | `oh_get_endeavor` |
-| Full context (ancestors, metis, guardrails) | `oh_get_dive_context` |
+| Move to different context | `oh_move_endeavor` |
 | Create endeavor | `oh_create_endeavor` |
 | Update title/description | `oh_update_endeavor` |
 | Move in hierarchy | `oh_set_parent` |
@@ -49,6 +49,23 @@ Two MCP servers are configured. Use them as your PRIMARY interface. Don't fall b
 | Full feature delivery | `/dev-pipeline-oversight` | New features, complex changes |
 | Ship a ready PR | `/ship` | PR exists, needs quality gate |
 | Log friction | `/friction` | MCP tool failed or was skipped |
+
+### Invoking Agents Correctly
+
+**Pass only the issue number or a short description. Never write step-by-step instructions.**
+
+The pipeline structure (problem-statement → solution-space → execute → ship → oversight) is defined in the agent files. Prescriptive prompts cause agents to follow the prompt instead of the pipeline, bypassing review, dissent, adversarial testing, and comment sweeps.
+
+```
+# CORRECT — let the pipeline drive
+Agent(subagent_type="dev-pipeline-oversight", isolation="worktree", prompt="/dev-pipeline-oversight #37")
+Agent(subagent_type="dev-pipeline-oversight", isolation="worktree", prompt="/dev-pipeline-oversight Fix archived endeavors showing in dashboard")
+
+# WRONG — overrides the pipeline, skips quality gates
+Agent(subagent_type="dev-pipeline", prompt="Fix X. Create a GitHub issue. Check the code. Add the route. Ship via PR.")
+```
+
+**Always use `isolation="worktree"`** for dev-pipeline, dev-pipeline-oversight, and ship agents. Multiple agents without worktrees stomp on each other's branches.
 
 ## Rules
 
