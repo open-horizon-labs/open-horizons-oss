@@ -26,6 +26,46 @@ The built-in MCP endpoint lets AI agents read and traverse your strategy graph, 
 
 No authentication is required. Open Horizons is designed to run on your own infrastructure, behind your own network boundary.
 
+## Part of the Open Horizons Toolkit
+
+Open Horizons is one of three tools that close the loop between strategy and execution:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        STRATEGY                                  │
+│                                                                  │
+│  Humans outline strategy in the graph (UI or MCP)               │
+│  ┌──────────────────────────────────┐                           │
+│  │  Open Horizons (this repo)       │◄── decisions, insights    │
+│  │  Strategy graph + MCP endpoint   │                           │
+│  └──────────┬───────────────────────┘                           │
+│             │ agents read strategy                               │
+│             ▼                                                    │
+│  ┌──────────────────────────────────┐                           │
+│  │  Repo-Native Alignment           │                           │
+│  │  Code understanding + alignment  │── agents align local work │
+│  └──────────┬───────────────────────┘   to strategy outcomes    │
+│             │ agents execute                                     │
+│             ▼                                                    │
+│  ┌──────────────────────────────────┐                           │
+│  │  Workflow Skills                  │                           │
+│  │  aim → execute → review → ship   │── humans guide, agents    │
+│  └──────────┬───────────────────────┘   build, both reflect     │
+│             │                                                    │
+│             └── feed back ──────────────────────────────────────┘
+│                                                                  │
+│                        EXECUTION                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| Tool | Who uses it | What it does |
+|------|-------------|--------------|
+| [**Open Horizons**](https://github.com/open-horizon-labs/open-horizons-oss) | Humans via UI, agents via MCP | Model strategy as a graph. Agents align local outcomes to it. Humans and agents feed decisions and insights back. |
+| [**Repo-Native Alignment**](https://github.com/open-horizon-labs/repo-native-alignment) | Agents via MCP | Code understanding + strategy alignment in one tool. Connects code symbols to business outcomes. Single binary, no external dependencies. |
+| [**Workflow Skills**](https://github.com/open-horizon-labs/skills) | Humans guide, agents execute | 10 skills that form the language of strategic execution: frame problems, explore solutions, ship outcomes, capture learning. [Framework overview](https://openhorizonlabs.ai/for-builders.html). |
+
+Each tool works standalone. Together, they create a feedback loop: strategy flows down through alignment into execution, and decisions and insights flow back up into the graph.
+
 ## Features
 
 - **Strategy graph** -- Tree visualization of your full strategic hierarchy, from mission down to tasks or outcomes.
