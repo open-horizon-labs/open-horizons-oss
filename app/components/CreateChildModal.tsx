@@ -26,8 +26,13 @@ export function CreateChildModal({
   loading = false
 }: CreateChildModalProps) {
   const [title, setTitle] = useState('')
-  const [selectedParentId, setSelectedParentId] = useState(currentParent.id)
+  const [selectedParentId, setSelectedParentId] = useState(currentParent?.id || '')
   const config = getActiveConfig()
+
+  // Guard: don't compute anything if childType is not set
+  if (!childType || !isOpen) {
+    return null
+  }
 
   // Resolve display name from config
   const childTypeConfig = config.nodeTypes.find(nt => nt.name === childType || nt.slug === childType)

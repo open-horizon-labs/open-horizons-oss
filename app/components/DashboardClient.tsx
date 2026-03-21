@@ -18,7 +18,7 @@ import Link from 'next/link'
 
 // Simple type matching using contract types
 function isTypeMatch(nodeType: string, selectedType: NodeType): boolean {
-  return nodeType.toLowerCase() === selectedType.toLowerCase()
+  return (nodeType || '').toLowerCase() === selectedType.toLowerCase()
 }
 
 // Get all nodes in a hierarchy (ancestors + descendants + self)

@@ -71,7 +71,7 @@ export function CreateEndeavorModal({
     }
 
     let potentialParents = contextFilteredNodes.filter(node => {
-      const nodeTypeLower = node.node_type.toLowerCase()
+      const nodeTypeLower = (node.node_type || '').toLowerCase()
       return (
         validParentTypeNames.includes(node.node_type) ||
         validParentTypeSlugs.includes(nodeTypeLower)

@@ -40,12 +40,14 @@ export interface StrategyConfig {
 
 /** Get a node type config by slug (case-insensitive) */
 export function getNodeTypeBySlug(config: StrategyConfig, slug: string): NodeTypeConfig | undefined {
+  if (!slug) return undefined
   const lower = slug.toLowerCase()
   return config.nodeTypes.find(nt => nt.slug === lower)
 }
 
 /** Get a node type config by display name (case-insensitive) */
 export function getNodeTypeByName(config: StrategyConfig, name: string): NodeTypeConfig | undefined {
+  if (!name) return undefined
   const lower = name.toLowerCase()
   return config.nodeTypes.find(nt => nt.name.toLowerCase() === lower)
 }

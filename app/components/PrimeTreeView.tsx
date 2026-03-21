@@ -38,7 +38,7 @@ export function PrimeTreeView({ allNodes, currentNodeId, date, currentBody = '',
   // Filter to only include endeavor types (exclude achievements, strengths, tasks, etc.)
   const filteredNodes = useMemo(() => {
     const endeavorTypes = ['mission', 'aim', 'initiative', 'goal', 'project', 'ritual', 'daily_page', 'user']
-    return allNodes.filter(node => endeavorTypes.includes(node.node_type.toLowerCase()))
+    return allNodes.filter(node => node.node_type && endeavorTypes.includes(node.node_type.toLowerCase()))
   }, [allNodes])
 
   // Load log previews for filtered nodes only
