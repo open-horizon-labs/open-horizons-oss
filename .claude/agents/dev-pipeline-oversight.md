@@ -4,9 +4,13 @@ description: Wraps dev-pipeline with post-merge oversight — verifies ALL PR co
 tools: Read, Write, Edit, Grep, Glob, Bash, Agent, WebFetch, WebSearch
 mcpServers:
   - rna-mcp
+  - oh-mcp
+isolation: worktree
 ---
 
 # /dev-pipeline-oversight
+
+> **IMPORTANT: This agent MUST run in a git worktree** so it doesn't conflict with other agents or the main working directory.
 
 **dev-pipeline + post-merge comment audit.** Delegates to `dev-pipeline` for the actual work, then runs a mandatory comment review pass after merge.
 

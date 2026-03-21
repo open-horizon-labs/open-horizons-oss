@@ -4,9 +4,13 @@ description: Full dev pipeline from problem framing through merge. Ensures GitHu
 tools: Read, Write, Edit, Grep, Glob, Bash, Agent, WebFetch, WebSearch
 mcpServers:
   - rna-mcp
+  - oh-mcp
+isolation: worktree
 ---
 
 # /dev-pipeline
+
+> **IMPORTANT: This agent MUST run in a git worktree** so it doesn't conflict with other agents or the main working directory. The `isolation: worktree` frontmatter handles this automatically when spawned via Agent tool.
 
 Full development pipeline: **problem-statement → solution-space → execute → ship.**
 

@@ -4,6 +4,8 @@ description: Quality gate from implementation to merge. 13-step pipeline with de
 tools: Read, Write, Edit, Grep, Glob, Bash, Agent
 mcpServers:
   - rna-mcp
+  - oh-mcp
+isolation: worktree
 ---
 
 # /ship Pipeline
