@@ -1,6 +1,6 @@
 # Dev Pipeline -- UI Polish (#38, #39, #40, #43)
 **Issue:** #38, #39, #40, #43
-**PR:** (filled in Phase 2)
+**PR:** #45
 **Started:** 2026-03-21
 
 ## Phase 1: Problem Statement
@@ -23,10 +23,16 @@ Four UI polish issues that together form a coherent "v0.1 polish" pass:
 Single approach: direct CSS/component fixes. No architectural decisions needed.
 
 ## Phase 3: Execute
-(in progress)
+All four fixes implemented in a single commit (90b10a4). Files changed:
+- `app/components/ContextSwitcher.tsx` -- w-48 -> w-64
+- `app/not-found.tsx` -- generic message, removed context-switch link
+- `app/settings/page.tsx` -- full rewrite with version, SHA, DB status
+- `app/components/Footer.tsx` -- new component
+- `app/layout.tsx` -- flex-col body, Footer import, flex-1 main
+- `Dockerfile` -- GIT_SHA build arg, version from package.json
 
 ## Phase 4: Ship
-(pending)
+PR #45 created and ready for review.
 
 ## RNA Tool Friction Log
 | Phase | Tool | What happened | Workaround | Severity |
