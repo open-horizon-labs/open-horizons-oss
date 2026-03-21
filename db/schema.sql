@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS endeavors (
   context_id TEXT NOT NULL REFERENCES contexts(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
-  node_type TEXT NOT NULL DEFAULT 'Task' CHECK (node_type IN ('Mission', 'Aim', 'Initiative', 'Task')),
+  node_type TEXT NOT NULL DEFAULT 'Aim',
   status TEXT NOT NULL DEFAULT 'active',
   metadata JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
