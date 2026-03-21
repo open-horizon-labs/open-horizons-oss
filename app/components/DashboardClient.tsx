@@ -277,12 +277,59 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
     localStorage.setItem('dashboard-view-mode', mode)
   }
 
-  // 🚨 CONTRACT-FIRST UI: Use contract helpers for type safety
-  // Group nodes by type for display using contract-validated data
-  // Tasks are not displayed as separate cards - they appear nested in parent endeavor cards
-  const missions = filterNodesByType(filteredNodes, 'Mission')
-  const aims = filterNodesByType(filteredNodes, 'Aim')
-  const initiatives = filterNodesByType(filteredNodes, 'Initiative')
+  // Group nodes by type dynamically — sections ordered root-first (top of hierarchy)
+  const nodeTypeGroups = useMemo(() => {
+    // Compute hierarchy depth for each type: root types (no parent) = 0, then depth increases
+    const typeDepth = new Map<string, number>()
+
+    // First pass: find root types (nodes with no parent_id)
+    nodes.forEach(n => {
+      if (n.node_type && !n.parent_id && !typeDepth.has(n.node_type)) {
+        typeDepth.set(n.node_type, 0)
+      }
+    })
+
+    // BFS to compute depth of each type based on parent-child relationships
+    let changed = true
+    while (changed) {
+      changed = false
+      nodes.forEach(n => {
+        if (!n.node_type || typeDepth.has(n.node_type)) return
+        // Find this node's parent to determine depth
+        if (n.parent_id) {
+          const parent = nodes.find(p => p.id === n.parent_id)
+          if (parent?.node_type && typeDepth.has(parent.node_type)) {
+            typeDepth.set(n.node_type, (typeDepth.get(parent.node_type) || 0) + 1)
+            changed = true
+          }
+        }
+      })
+    }
+
+    // Any types not reached get a high depth
+    nodes.forEach(n => {
+      if (n.node_type && !typeDepth.has(n.node_type)) {
+        typeDepth.set(n.node_type, 999)
+      }
+    })
+
+    // Build groups sorted by depth (root first)
+    const allTypes = Array.from(typeDepth.entries())
+      .sort(([, a], [, b]) => a - b)
+      .map(([typeName]) => typeName)
+
+    return allTypes
+      .map(typeName => {
+        const typeNodes = filteredNodes.filter(n => n.node_type === typeName)
+        if (typeNodes.length === 0) return null
+        return {
+          typeName,
+          typeSlug: typeName.toLowerCase().replace(/\s+/g, '_'),
+          nodes: typeNodes
+        }
+      })
+      .filter((g): g is NonNullable<typeof g> => g !== null)
+  }, [filteredNodes, nodes])
 
 
   // Don't render until we've loaded from localStorage to prevent hydration mismatch
@@ -383,61 +430,26 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Missions */}
-          <NodeSection
-            title="Missions"
-            nodes={missions}
-            today={today}
-            allNodes={nodes}
-            hierarchyFocus={hierarchyFocus}
-            onHierarchyFocus={handleHierarchyFocus}
-            loading={loading}
-            setLoading={setLoading}
-            isDragging={isDragging}
-            setIsDragging={setIsDragging}
-            toast={toast}
-            onDataChange={onDataChange}
-            contextId={contextId}
-            openCreateModal={openCreateModal}
-          />
-
-          {/* Aims */}
-          <NodeSection
-            title="Aims"
-            nodes={aims}
-            today={today}
-            allNodes={nodes}
-            hierarchyFocus={hierarchyFocus}
-            onHierarchyFocus={handleHierarchyFocus}
-            loading={loading}
-            setLoading={setLoading}
-            isDragging={isDragging}
-            setIsDragging={setIsDragging}
-            toast={toast}
-            onDataChange={onDataChange}
-            contextId={contextId}
-            openCreateModal={openCreateModal}
-          />
-
-          {/* Initiatives */}
-          <NodeSection
-            title="Initiatives"
-            nodes={initiatives}
-            today={today}
-            allNodes={nodes}
-            hierarchyFocus={hierarchyFocus}
-            onHierarchyFocus={handleHierarchyFocus}
-            loading={loading}
-            setLoading={setLoading}
-            isDragging={isDragging}
-            setIsDragging={setIsDragging}
-            toast={toast}
-            onDataChange={onDataChange}
-            contextId={contextId}
-            openCreateModal={openCreateModal}
-          />
-
-
+          {nodeTypeGroups.map(group => (
+            <NodeSection
+              key={group.typeName}
+              title={group.typeName}
+              typeSlug={group.typeSlug}
+              nodes={group.nodes}
+              today={today}
+              allNodes={nodes}
+              hierarchyFocus={hierarchyFocus}
+              onHierarchyFocus={handleHierarchyFocus}
+              loading={loading}
+              setLoading={setLoading}
+              isDragging={isDragging}
+              setIsDragging={setIsDragging}
+              toast={toast}
+              onDataChange={onDataChange}
+              contextId={contextId}
+              openCreateModal={openCreateModal}
+            />
+          ))}
         </div>
       )}
 
@@ -463,6 +475,7 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
 
 interface NodeSectionProps {
   title: string
+  typeSlug: string
   nodes: GraphNode[]
   today: string
   allNodes: GraphNode[]
@@ -478,45 +491,22 @@ interface NodeSectionProps {
   openCreateModal: (type: NodeType, defaultParentId?: string) => void
 }
 
-function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarchyFocus, loading, setLoading, isDragging, setIsDragging, toast, onDataChange, contextId, openCreateModal }: NodeSectionProps) {
+function NodeSection({ title, typeSlug, nodes, today, allNodes, hierarchyFocus, onHierarchyFocus, loading, setLoading, isDragging, setIsDragging, toast, onDataChange, contextId, openCreateModal }: NodeSectionProps) {
   return (
     <div>
       <div className="group flex items-center justify-between mb-3">
         <h3 className="font-medium text-gray-900">{title}</h3>
 
-        {/* Create section-level button - only for this section's type */}
-        {(title === 'Missions' || title === 'Aims' || title === 'Initiatives') && (
-          <div className={`${title === 'Missions' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity flex items-center gap-1 text-sm`}>
-            <span className="text-gray-500">Create:</span>
-            {title === 'Missions' && (
-              <button
-                onClick={() => openCreateModal('mission')}
-                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded text-xs font-medium"
-                disabled={loading}
-              >
-                +Mission
-              </button>
-            )}
-            {title === 'Aims' && (
-              <button
-                onClick={() => openCreateModal('aim')}
-                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-xs font-medium"
-                disabled={loading}
-              >
-                +Aim
-              </button>
-            )}
-            {title === 'Initiatives' && (
-              <button
-                onClick={() => openCreateModal('initiative')}
-                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded text-xs font-medium"
-                disabled={loading}
-              >
-                +Initiative
-              </button>
-            )}
-          </div>
-        )}
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-sm">
+          <span className="text-gray-500">Create:</span>
+          <button
+            onClick={() => openCreateModal(typeSlug)}
+            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-medium"
+            disabled={loading}
+          >
+            +{title}
+          </button>
+        </div>
       </div>
       <div className="space-y-4">
         {/* Always show existing nodes if any */}
@@ -564,27 +554,41 @@ function NodeSection({ title, nodes, today, allNodes, hierarchyFocus, onHierarch
                 </div>
                 
                 <div className="flex items-center gap-1">
-                  {/* Hierarchical creation buttons - strict hierarchy */}
-                  {node.node_type === 'Mission' && (
-                    <button
-                      onClick={() => openCreateModal('aim', node.id)}
-                      className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-xs font-medium"
-                      disabled={loading}
-                      title={`Create Aim under "${node.title}"`}
-                    >
-                      +Aim
-                    </button>
-                  )}
-                  {node.node_type === 'Aim' && (
-                    <button
-                      onClick={() => openCreateModal('initiative', node.id)}
-                      className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded text-xs font-medium"
-                      disabled={loading}
-                      title={`Create Initiative under "${node.title}"`}
-                    >
-                      +Initiative
-                    </button>
-                  )}
+                  {/* Dynamic child creation buttons — derived from children in the data */}
+                  {(() => {
+                    // Find what child types exist for nodes of this type
+                    const childTypes = new Set<string>()
+                    allNodes.forEach(n => {
+                      if (n.parent_id === node.id && n.node_type) {
+                        childTypes.add(n.node_type)
+                      }
+                    })
+                    // Also check node_types valid_children if available
+                    // For now, show a generic "+Child" if this node has no children yet
+                    // but other nodes of the same type do
+                    if (childTypes.size === 0) {
+                      allNodes.forEach(peer => {
+                        if (peer.node_type === node.node_type) {
+                          allNodes.forEach(n => {
+                            if (n.parent_id === peer.id && n.node_type) {
+                              childTypes.add(n.node_type)
+                            }
+                          })
+                        }
+                      })
+                    }
+                    return Array.from(childTypes).map(childType => (
+                      <button
+                        key={childType}
+                        onClick={() => openCreateModal(childType.toLowerCase().replace(/\s+/g, '_'), node.id)}
+                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-xs font-medium"
+                        disabled={loading}
+                        title={`Create ${childType} under "${node.title}"`}
+                      >
+                        +{childType}
+                      </button>
+                    ))
+                  })()}
                   <button
                     onClick={() => onHierarchyFocus(hierarchyFocus === node.id ? null : node.id)}
                     className={`px-2 py-1 text-xs rounded ${
