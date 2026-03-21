@@ -59,17 +59,3 @@ export interface DerivedDescriptor {
   summary: string
   confidence?: number
 }
-
-export interface DailyFrontMatter {
-  id: string // e.g., daily.YYYY-MM-DD
-  node_type: 'DailyPage'
-  activeContextFor: string // oh:active_context_for
-  references?: string[] // oh:references
-}
-
-export type ReviewBlocks = {
-  done: string[]
-  aims: string[]
-  next: string[]
-  reflection: { win?: string; learning?: string; adjust?: string }
-}

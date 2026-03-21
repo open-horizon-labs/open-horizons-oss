@@ -12,7 +12,6 @@
     "test:watch": "jest --watch",
     "test:api": "jest --config=jest.api.config.js",
     "test:handles": "jest --detectOpenHandles",
-    "setup-test-users": "node scripts/setup-test-users.js",
     "validate-contracts": "node scripts/validate-contracts.js"
   },
   "dependencies": {
@@ -25,7 +24,6 @@
     "primeicons": "^7.0.0",
     "primereact": "^10.9.7",
     "react": "^19.0.0",
-    "react-arborist": "^3.4.3",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
@@ -53,7 +51,6 @@
     "node-fetch": "^3.3.2",
     "postcss": "8.4.38",
     "tailwindcss": "3.4.7",
-    "typescript": "^5.6.3",
-    "yakbak": "^5.0.1"
+    "typescript": "^5.6.3"
   }
 }

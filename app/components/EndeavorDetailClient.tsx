@@ -7,7 +7,6 @@ import remarkGfm from 'remark-gfm'
 import { MarkdownEditor } from './MarkdownEditor'
 import { CreateChildModal } from './CreateChildModal'
 import { ChangeParentModal } from './ChangeParentModal'
-// import { analyzeGraph, generateRecommendations } from '../../lib/graph/analysis' // TODO: Migrate to contract types
 import { getRoleIcon } from '../../lib/constants/icons'
 
 interface EndeavorDetailClientProps {

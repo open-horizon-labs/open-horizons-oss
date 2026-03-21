@@ -21,9 +21,8 @@ const ABOUT_INFO = {
   },
 
   concepts: {
-    contexts: 'Personal or shared spaces where endeavors live',
+    contexts: 'Spaces where endeavors live',
     endeavors: 'Any node in the hierarchy (mission, aim, initiative, task)',
-    decisionLogs: 'Captured reasoning and progress tied to endeavors',
     alignment: 'The thread connecting daily work to strategic purpose'
   },
 
@@ -36,18 +35,13 @@ const ABOUT_INFO = {
       dashboard: 'GET /api/dashboard?contextId=:contextId',
       get: 'GET /api/endeavors/:id',
       create: 'POST /api/endeavors/create'
-    },
-    logs: {
-      list: 'GET /api/logs?entity_type=endeavor&entity_id=:id',
-      create: 'POST /api/logs'
     }
   },
 
   bestPractices: [
     'Always trace tasks back to their parent mission to understand *why*',
-    'Log decisions when making strategic choices, not just completions',
-    'Use contexts to separate personal work from shared team endeavors',
-    'When logging decisions, include reasoning and context for future reference'
+    'Use contexts to separate different domains of work',
+    'Structure your hierarchy so every task traces to a mission'
   ]
 }
 
@@ -66,15 +60,14 @@ Mission (why you exist)
 
 ## Key Concepts
 
-- **Contexts**: Personal or shared spaces where endeavors live
+- **Contexts**: Spaces where endeavors live
 - **Endeavors**: Any node in the hierarchy (mission, aim, initiative, task)
-- **Decision logs**: Captured reasoning and progress tied to endeavors
 - **Alignment**: Every task traces back to a mission, so you always know *why*
 
 ## API Endpoints
 
 ### Contexts
-- \`GET /api/contexts\` - List all accessible contexts
+- \`GET /api/contexts\` - List all contexts
 - \`GET /api/contexts/:contextId\` - Get context details
 
 ### Endeavors
@@ -82,16 +75,11 @@ Mission (why you exist)
 - \`GET /api/endeavors/:id\` - Get endeavor details
 - \`POST /api/endeavors/create\` - Create a new endeavor
 
-### Logs
-- \`GET /api/logs?entity_type=endeavor&entity_id=:id\` - Get logs for an endeavor
-- \`POST /api/logs\` - Create a log entry
-
 ## Best Practices
 
 - Always trace tasks back to their parent mission to understand *why*
-- Log decisions when making strategic choices, not just completions
-- Use contexts to separate personal work from shared team endeavors
-- When logging decisions, include reasoning and context for future reference
+- Use contexts to separate different domains of work
+- Structure your hierarchy so every task traces to a mission
 `
 
 export async function GET(request: Request) {

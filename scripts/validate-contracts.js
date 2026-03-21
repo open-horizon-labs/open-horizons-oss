@@ -210,8 +210,6 @@ try {
     ...findFiles(join(rootDir, 'app'), '.ts'),
     ...findFiles(join(rootDir, 'lib'), '.ts'),
     ...findFiles(join(rootDir, '__tests__'), '.ts'), // API integration tests
-    ...findFiles(join(rootDir, '../web'), '.tsx'), // Web app components
-    ...findFiles(join(rootDir, '../web'), '.ts'),   // Web app utilities
   ]
 
   for (const file of allFiles) {
