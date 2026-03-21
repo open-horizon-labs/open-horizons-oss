@@ -240,11 +240,21 @@ export function PresetLensButton({ preset, label, onApply, isActive }: PresetLen
 interface LensPresetBarProps {
   selectedRoles: string[]
   onApplyPreset: (roles: string[]) => void
+  availableRoles?: string[]
 }
 
-export function LensPresetBar({ selectedRoles, onApplyPreset }: LensPresetBarProps) {
-  const isPresetActive = (preset: keyof typeof PRESET_LENSES) => {
-    const presetRoles = PRESET_LENSES[preset]
+export function LensPresetBar({ selectedRoles, onApplyPreset, availableRoles }: LensPresetBarProps) {
+  // Derive strategic/tactical from the available roles (ordered by hierarchy depth)
+  const roles = availableRoles || getActiveConfig().nodeTypes.map(nt => nt.name)
+  const midpoint = Math.ceil(roles.length / 2)
+  const lenses: Record<string, string[]> = {
+    strategic: roles.slice(0, midpoint),
+    tactical: roles.slice(midpoint),
+    all: roles
+  }
+
+  const isPresetActive = (preset: string) => {
+    const presetRoles = lenses[preset]
     return presetRoles.length === selectedRoles.length &&
            presetRoles.every(role => selectedRoles.includes(role))
   }
@@ -252,24 +262,30 @@ export function LensPresetBar({ selectedRoles, onApplyPreset }: LensPresetBarPro
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <span className="text-sm text-gray-600 font-medium">Quick Lenses:</span>
-      <PresetLensButton
-        preset="strategic"
-        label="Strategic"
-        onApply={onApplyPreset}
-        isActive={isPresetActive('strategic')}
-      />
-      <PresetLensButton
-        preset="tactical"
-        label="Tactical"
-        onApply={onApplyPreset}
-        isActive={isPresetActive('tactical')}
-      />
-      <PresetLensButton
-        preset="all"
-        label="All"
-        onApply={onApplyPreset}
-        isActive={isPresetActive('all')}
-      />
+      <button
+        onClick={() => onApplyPreset(lenses.strategic)}
+        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+          isPresetActive('strategic') ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        Strategic
+      </button>
+      <button
+        onClick={() => onApplyPreset(lenses.tactical)}
+        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+          isPresetActive('tactical') ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        Tactical
+      </button>
+      <button
+        onClick={() => onApplyPreset(lenses.all)}
+        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+          isPresetActive('all') ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        All
+      </button>
     </div>
   )
 }

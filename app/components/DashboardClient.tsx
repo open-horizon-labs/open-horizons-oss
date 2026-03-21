@@ -373,6 +373,7 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
               selectedRoles={selectedTypes as any}
               onRoleToggle={handleTypeToggle as any}
               onClear={handleClearTypes}
+              availableRoles={nodeTypeGroups.map(g => g.typeName)}
             />
             {filteredNodes.length !== nodes.length && (
               <span className="text-sm text-gray-600">
@@ -386,6 +387,7 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
         <LensPresetBar
           selectedRoles={selectedTypes as any}
           onApplyPreset={handleApplyPreset as any}
+          availableRoles={nodeTypeGroups.map(g => g.typeName)}
         />
 
       </div>
