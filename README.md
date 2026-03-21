@@ -61,6 +61,7 @@ Open Horizons is one of three tools that close the loop between strategy and exe
 | Tool | Who uses it | What it does |
 |------|-------------|--------------|
 | [**Open Horizons**](https://github.com/open-horizon-labs/open-horizons-oss) | Humans via UI, agents via MCP | Model strategy as a graph. Agents align local outcomes to it. Humans and agents feed decisions and insights back. |
+| [**OH MCP Server**](https://github.com/open-horizon-labs/oh-mcp-server) | Agents via MCP stdio | Connects AI agents (Claude, Cursor, etc.) to the strategy graph. Read/write endeavors, log decisions, propose insights. |
 | [**Repo-Native Alignment**](https://github.com/open-horizon-labs/repo-native-alignment) | Agents via MCP | Code understanding + strategy alignment in one tool. Connects code symbols to business outcomes. Single binary, no external dependencies. |
 | [**Workflow Skills**](https://github.com/open-horizon-labs/skills) | Humans guide, agents execute | 10 skills that form the language of strategic execution: frame problems, explore solutions, ship outcomes, capture learning. [Framework overview](https://openhorizonlabs.ai/for-builders.html). |
 
