@@ -31,13 +31,10 @@ jest.mock('./lib/db', () => ({
   getPool: jest.fn(),
 }))
 
-// Mock window.location
-Object.defineProperty(window, 'location', {
-  value: {
-    origin: 'http://localhost:3001',
-  },
-  writable: true,
-})
+// Mock window.location.origin
+// In newer jsdom versions, location is not redefinable, so we delete and recreate it
+delete window.location
+window.location = { origin: 'http://localhost:3001' }
 
 // Global fetch mock removed - tests should mock fetch individually if needed
 
