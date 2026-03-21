@@ -44,7 +44,7 @@ const DEFAULT_PRESET = 'open-horizons'
  */
 export function getActiveConfig(): StrategyConfig {
   const presetId = (
-    typeof process !== 'undefined' && process.env?.STRATEGY_PRESET
+    typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_STRATEGY_PRESET || process.env?.STRATEGY_PRESET)
   ) || DEFAULT_PRESET
 
   const config = PRESETS[presetId]

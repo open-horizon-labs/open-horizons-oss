@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { query } from '../../lib/db'
 import { ContextAwareDataProvider } from './ContextAwareDataProvider'
 
@@ -42,9 +43,11 @@ export async function GlobalContextAwareProvider({ children }: { children: React
   })) as any[]
 
   return (
-    <ContextAwareDataProvider initialNodes={nodes} userId={userId}>
-      {children}
-    </ContextAwareDataProvider>
+    <Suspense fallback={null}>
+      <ContextAwareDataProvider initialNodes={nodes} userId={userId}>
+        {children}
+      </ContextAwareDataProvider>
+    </Suspense>
   )
 }
 
