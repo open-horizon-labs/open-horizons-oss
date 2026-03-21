@@ -29,6 +29,7 @@ supabase/.temp/
 
 # test
 .api-test.port
+.api-test-server.json
 deployment-logs/
 
 # IDE

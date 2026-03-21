@@ -25,6 +25,9 @@ const apiJestConfig = {
   restoreMocks: true,
   // Run tests sequentially to avoid port conflicts
   maxWorkers: 1,
+  // Start a single shared Next.js server for all test files
+  globalSetup: '<rootDir>/__tests__/api/global-setup.js',
+  globalTeardown: '<rootDir>/__tests__/api/global-teardown.js',
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
