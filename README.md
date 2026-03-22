@@ -73,6 +73,7 @@ Each tool works standalone. Together, they create a feedback loop: strategy flow
 
 - **Strategy graph** -- Tree visualization of your full strategic hierarchy, from mission down to tasks or outcomes.
 - **Configurable node types** -- Choose a preset or define your own hierarchy. Ship with two built-in presets.
+- **Lens presets** -- Create named filter presets (e.g., "Strategic" = Mission + Goal) for quick dashboard filtering. Presets persist across sessions.
 - **MCP endpoint** -- JSON-RPC API at `/api/mcp` for AI agent integration. Agents can list, search, and traverse the graph.
 - **Markdown import** -- Import strategy documents as structured graph nodes.
 - **REST API** -- Full CRUD for endeavors, edges, contexts, and dashboard data.
