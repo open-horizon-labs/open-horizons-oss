@@ -7,7 +7,7 @@ import { GraphNode, ApiNodeType, UserNodeType, DatabaseNodeType } from '../../li
 // Use contract types instead of legacy NodeType
 type NodeType = UserNodeType
 import { filterNodesByType, consumeGraphNodes } from '../../lib/contracts/ui-helpers'
-import { LensFilter, LensPresetBar } from './LensFilter'
+import { LensFilter } from './LensFilter'
 import { NodeTypeChip } from './NodeTypeChips'
 import { getRoleIcon } from '../../lib/constants/icons'
 import { getEndeavorLink, navigateToEndeavor } from '../../lib/utils/endeavor-links'
