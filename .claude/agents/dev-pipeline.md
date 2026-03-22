@@ -56,22 +56,29 @@ Initialize at pipeline start:
 
 ---
 
-## Phase 1: Problem Statement → GitHub Issue
+## Phase 1: Problem Statement → GitHub Issue → Outcome
 
-**Goal:** Ensure the work has a crisp problem statement in a GitHub issue.
+**Goal:** Ensure the work has a crisp problem statement in a GitHub issue, laddered to a declared outcome.
 
 ### If an issue number was provided:
 1. Read the issue: `gh issue view <number>`
 2. Does it have a clear problem statement? (outcome-focused, testable, solution-agnostic)
-3. If yes — extract into session file, move to Phase 2.
+3. If yes — extract into session file.
 4. If no — reframe it, update the issue body.
 
 ### If only a description was provided:
-1. Frame the problem statement.
-2. Create a GitHub issue.
+1. Frame the problem statement using `/problem-statement` thinking: what behavior changes, for whom, why now.
+2. Create a GitHub issue with the problem statement, acceptance criteria, and outcome link.
 3. Record issue number in session file.
 
-**Gate:** Do not proceed without acceptance criteria.
+### Ladder to an outcome:
+Every issue must connect to a declared outcome. After creating/reading the issue:
+1. Check `.oh/outcomes/` for existing outcomes this work serves.
+2. If one exists — tag the issue with `[outcome:<id>]` in the title or body.
+3. If none exists — ask: is this work worth doing without a declared outcome? If yes, note why. If no, create the outcome first.
+4. Use `oh_create_endeavor` or `oh_log_decision` to record the linkage in the strategy graph.
+
+**Gate:** Do not proceed without acceptance criteria AND an outcome linkage (or explicit justification for why none exists).
 
 ---
 
