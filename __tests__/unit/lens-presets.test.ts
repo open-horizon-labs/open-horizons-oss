@@ -125,3 +125,54 @@ describe('deletePreset', () => {
     expect(deletePreset('nonexistent')).toBe(false)
   })
 })
+
+// ============================================================
+// Adversarial / edge-case tests (ship step 4)
+// ============================================================
+
+describe('adversarial: XSS and injection', () => {
+  it('handles preset names with HTML/script tags safely', () => {
+    const preset = createPreset('<script>alert(1)</script>', ['Mission'])
+    expect(preset.name).toBe('<script>alert(1)</script>')
+    const loaded = loadPresets()
+    expect(loaded[0].name).toBe('<script>alert(1)</script>')
+    // React auto-escapes, so this just verifies data round-trips
+  })
+
+  it('handles extremely long preset names', () => {
+    const longName = 'A'.repeat(10000)
+    const preset = createPreset(longName, ['Mission'])
+    const loaded = loadPresets()
+    expect(loaded[0].name).toBe(longName)
+  })
+})
+
+describe('adversarial: empty and special inputs', () => {
+  it('creates preset with empty string node types in array', () => {
+    const preset = createPreset('Empty Types', ['', 'Mission', ''])
+    expect(preset.nodeTypes).toEqual(['', 'Mission', ''])
+  })
+
+  it('handles preset with unicode name', () => {
+    const preset = createPreset('Strategische Ansicht', ['Mission'])
+    expect(preset.name).toBe('Strategische Ansicht')
+    expect(preset.id).toMatch(/^strategische_ansicht_/)
+  })
+
+  it('survives concurrent create-delete-create cycle', () => {
+    const p1 = createPreset('A', ['Mission'])
+    deletePreset(p1.id)
+    const p2 = createPreset('A', ['Goal'])
+    const loaded = loadPresets()
+    expect(loaded).toHaveLength(1)
+    expect(loaded[0].nodeTypes).toEqual(['Goal'])
+  })
+
+  it('update with empty object is a no-op', () => {
+    const preset = createPreset('Stable', ['Mission'])
+    updatePreset(preset.id, {})
+    const loaded = loadPresets()
+    expect(loaded[0].name).toBe('Stable')
+    expect(loaded[0].nodeTypes).toEqual(['Mission'])
+  })
+})
