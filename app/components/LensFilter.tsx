@@ -1,8 +1,15 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { SingleRoleChip } from './NodeTypeChips'
 import { getActiveConfig } from '../../lib/config'
+import {
+  LensPreset,
+  loadPresets,
+  createPreset,
+  updatePreset,
+  deletePreset
+} from '../../lib/lens-presets'
 
 interface LensFilterProps {
   selectedRoles: string[]
@@ -191,6 +198,238 @@ export function LensFilter({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
+// User-configurable Lens Preset Bar
+// ============================================================
+
+interface LensPresetBarProps {
+  selectedRoles: string[]
+  onApplyPreset: (roles: string[]) => void
+  availableRoles?: string[]
+}
+
+export function LensPresetBar({ selectedRoles, onApplyPreset, availableRoles }: LensPresetBarProps) {
+  const roles = availableRoles || getActiveConfig().nodeTypes.map(nt => nt.name)
+
+  // Preset state -- loaded from localStorage on mount
+  const [presets, setPresets] = useState<LensPreset[]>([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingPreset, setEditingPreset] = useState<LensPreset | null>(null)
+  const [presetName, setPresetName] = useState('')
+  const [presetTypes, setPresetTypes] = useState<string[]>([])
+  const formRef = useRef<HTMLDivElement>(null)
+
+  // Load presets on mount
+  useEffect(() => {
+    setPresets(loadPresets())
+  }, [])
+
+  // Close form on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (formRef.current && !formRef.current.contains(event.target as Node)) {
+        cancelEditing()
+      }
+    }
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isEditing])
+
+  const isPresetActive = useCallback((preset: LensPreset) => {
+    return (
+      preset.nodeTypes.length > 0 &&
+      preset.nodeTypes.length === selectedRoles.length &&
+      preset.nodeTypes.every(t => selectedRoles.includes(t))
+    )
+  }, [selectedRoles])
+
+  // ---- CRUD handlers ----
+
+  function startCreate() {
+    setEditingPreset(null)
+    setPresetName('')
+    // Default to current selection if any, otherwise empty
+    setPresetTypes(selectedRoles.length > 0 ? [...selectedRoles] : [])
+    setIsEditing(true)
+  }
+
+  function startEdit(preset: LensPreset) {
+    setEditingPreset(preset)
+    setPresetName(preset.name)
+    setPresetTypes([...preset.nodeTypes])
+    setIsEditing(true)
+  }
+
+  function cancelEditing() {
+    setIsEditing(false)
+    setEditingPreset(null)
+    setPresetName('')
+    setPresetTypes([])
+  }
+
+  function handleSave() {
+    const trimmed = presetName.trim()
+    if (!trimmed || presetTypes.length === 0) return
+
+    if (editingPreset) {
+      updatePreset(editingPreset.id, { name: trimmed, nodeTypes: presetTypes })
+    } else {
+      createPreset(trimmed, presetTypes)
+    }
+    setPresets(loadPresets())
+    cancelEditing()
+  }
+
+  function handleDelete(id: string) {
+    deletePreset(id)
+    setPresets(loadPresets())
+    if (editingPreset?.id === id) cancelEditing()
+  }
+
+  function toggleType(type: string) {
+    setPresetTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    )
+  }
+
+  // ---- Built-in "All" pseudo-preset ----
+  const allActive =
+    roles.length > 0 &&
+    roles.length === selectedRoles.length &&
+    roles.every(r => selectedRoles.includes(r))
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-sm text-gray-600 font-medium">Quick Lenses:</span>
+
+        {/* User presets */}
+        {presets.map(preset => (
+          <div key={preset.id} className="group relative inline-flex">
+            <button
+              onClick={() => onApplyPreset(preset.nodeTypes)}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                isPresetActive(preset)
+                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title={`Apply "${preset.name}" lens (${preset.nodeTypes.join(', ')})`}
+            >
+              {preset.name}
+            </button>
+            {/* Edit/delete on hover */}
+            <span className="hidden group-hover:inline-flex items-center gap-0.5 ml-0.5">
+              <button
+                onClick={() => startEdit(preset)}
+                className="p-0.5 text-gray-400 hover:text-gray-600 rounded"
+                title="Edit preset"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleDelete(preset.id)}
+                className="p-0.5 text-gray-400 hover:text-red-600 rounded"
+                title="Delete preset"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          </div>
+        ))}
+
+        {/* Built-in "All" shortcut */}
+        <button
+          onClick={() => onApplyPreset(roles)}
+          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+            allActive
+              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          All
+        </button>
+
+        {/* Add preset button */}
+        <button
+          onClick={startCreate}
+          className="px-2 py-1 rounded text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-dashed border-gray-300 transition-colors"
+          title="Create a new lens preset"
+        >
+          + New Preset
+        </button>
+      </div>
+
+      {/* Inline create/edit form */}
+      {isEditing && (
+        <div
+          ref={formRef}
+          className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              {editingPreset ? 'Edit Preset' : 'New Preset'}
+            </label>
+            <input
+              type="text"
+              value={presetName}
+              onChange={e => setPresetName(e.target.value)}
+              placeholder="Preset name..."
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              autoFocus
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleSave()
+                if (e.key === 'Escape') cancelEditing()
+              }}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {roles.map(type => {
+              const isSelected = presetTypes.includes(type)
+              return (
+                <button
+                  key={type}
+                  onClick={() => toggleType(type)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors border ${
+                    isSelected
+                      ? 'bg-blue-100 text-blue-800 border-blue-300'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  {type}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={cancelEditing}
+              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!presetName.trim() || presetTypes.length === 0}
+              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {editingPreset ? 'Save' : 'Create'}
+            </button>
           </div>
         </div>
       )}
