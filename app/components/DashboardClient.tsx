@@ -7,7 +7,7 @@ import { GraphNode, ApiNodeType, UserNodeType, DatabaseNodeType } from '../../li
 // Use contract types instead of legacy NodeType
 type NodeType = UserNodeType
 import { filterNodesByType, consumeGraphNodes } from '../../lib/contracts/ui-helpers'
-import { LensFilter } from './LensFilter'
+import { LensFilter, LensPresetBar } from './LensFilter'
 import { NodeTypeChip } from './NodeTypeChips'
 import { getRoleIcon } from '../../lib/constants/icons'
 import { getEndeavorLink, navigateToEndeavor } from '../../lib/utils/endeavor-links'
@@ -183,6 +183,11 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
   const handleClearTypes = () => {
     setSelectedTypes([])
     localStorage.setItem('dashboard-selected-types', JSON.stringify([]))
+  }
+
+  const handleApplyPreset = (roles: string[]) => {
+    setSelectedTypes(roles as NodeType[])
+    localStorage.setItem('dashboard-selected-types', JSON.stringify(roles))
   }
 
   
@@ -377,9 +382,12 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
               </span>
             )}
           </div>
-          
         </div>
-        
+        <LensPresetBar
+          selectedRoles={selectedTypes as string[]}
+          onApplyPreset={handleApplyPreset}
+          availableRoles={nodeTypeGroups.map(g => g.typeName)}
+        />
       </div>
 
       {/* Results */}
