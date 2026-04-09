@@ -154,10 +154,25 @@ export async function applyNodeTypes(client: any, nodeTypes: SeedNodeType[]): Pr
   await client.query('BEGIN')
 
   try {
-    // Delete types not in the new preset and not used by endeavors
+    // Check for endeavors that would be orphaned by removing old types
+    const incomingSlugs = nodeTypes.map(nt => nt.slug)
+    const orphaned = await client.query(
+      `SELECT DISTINCT node_type FROM endeavors
+       WHERE node_type NOT IN (SELECT unnest($1::text[]))`,
+      [incomingSlugs]
+    )
+    if (orphaned.rows.length > 0) {
+      const orphanedTypes = orphaned.rows.map((r: any) => r.node_type).join(', ')
+      throw new Error(
+        `[seed-node-types] Cannot remove node types still used by endeavors: ${orphanedTypes}. ` +
+        `Delete or reassign those endeavors first, or include those types in the preset.`
+      )
+    }
+
+    // Delete types not in the new preset
     await client.query(
       'DELETE FROM node_types WHERE slug NOT IN (SELECT unnest($1::text[]))',
-      [nodeTypes.map(nt => nt.slug)]
+      [incomingSlugs]
     )
 
     // Upsert all new types

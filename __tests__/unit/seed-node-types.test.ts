@@ -162,10 +162,11 @@ describe('applyNodeTypes', () => {
 
     const q = client._queries
     expect(q[0]).toBe('BEGIN')
-    expect(q[1]).toContain('DELETE FROM node_types')
-    expect(q[2]).toContain('INSERT INTO node_types')
+    expect(q[1]).toContain('SELECT DISTINCT node_type FROM endeavors')
+    expect(q[2]).toContain('DELETE FROM node_types')
     expect(q[3]).toContain('INSERT INTO node_types')
-    expect(q[4]).toBe('COMMIT')
+    expect(q[4]).toContain('INSERT INTO node_types')
+    expect(q[5]).toBe('COMMIT')
   })
 
   it('rolls back on failure', async () => {

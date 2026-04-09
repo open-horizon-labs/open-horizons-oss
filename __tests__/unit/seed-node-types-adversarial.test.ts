@@ -46,4 +46,24 @@ describe('adversarial: seed-node-types', () => {
     // DELETE should run even with empty array
     expect(queries.some(q => q.includes('DELETE FROM node_types'))).toBe(true)
   })
+
+  it('applyNodeTypes aborts when deletion would orphan endeavors', async () => {
+    const { applyNodeTypes } = await import('../../lib/config/seed-node-types')
+    const queries: string[] = []
+    const client = {
+      query: jest.fn<any>(async (text: string) => {
+        queries.push(text)
+        if (text.includes('SELECT DISTINCT node_type FROM endeavors')) {
+          // Simulate endeavors using a type that the new preset doesn't include
+          return { rows: [{ node_type: 'old_type' }] }
+        }
+        return { rows: [] }
+      })
+    }
+    await expect(
+      applyNodeTypes(client, [{ slug: 'new_type', name: 'New' }])
+    ).rejects.toThrow('Cannot remove node types still used by endeavors: old_type')
+    expect(queries).toContain('ROLLBACK')
+    expect(queries).not.toContain('DELETE FROM node_types')
+  })
 })
