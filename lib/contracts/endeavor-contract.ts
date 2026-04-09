@@ -93,15 +93,18 @@ export function dbToApiNodeType(dbType: DatabaseNodeType): ApiNodeType {
 // ========================================
 
 /** Request: Create Endeavor */
+const CreateEndeavorNullableId = z.preprocess(
+  (value) => (value === '' ? null : value),
+  z.string().min(1).nullable().optional()
+ )
+
 export const CreateEndeavorRequest = z.object({
-  title: z.string().min(1, 'Title is required').max(255, 'Title too long'),
-  type: z.string().refine(
-    (val) => getActiveConfig().nodeTypes.some(nt => nt.slug === val),
-    { message: 'Invalid node type' }
-  ),
-  contextId: z.string().optional().nullable(),
-  parentId: z.string().optional().nullable()
-})
+  title: z.string().trim().min(1, 'Title is required').max(255, 'Title too long'),
+  type: z.string().trim().min(1, 'Type is required'),
+  description: z.string().optional().nullable(),
+  contextId: CreateEndeavorNullableId,
+  parentId: CreateEndeavorNullableId
+}).strict()
 export type CreateEndeavorRequest = z.infer<typeof CreateEndeavorRequest>
 
 /** Response: Create Endeavor */

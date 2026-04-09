@@ -74,37 +74,23 @@ export function EndeavorDetailClient({ node, allNodes, userId, isNew }: Endeavor
     const description = formData.get('body') as string
     
     if (isNew) {
-      // Create new endeavor first
       const response = await fetch('/api/endeavors/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: node.title || `New ${node.node_type}`,
           type: node.node_type,
+          description,
           parentId: node.parent_id
         })
       })
-      
+
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to create endeavor')
       }
-      
+
       const { endeavorId } = await response.json()
-      
-      // Now update the description
-      const descResponse = await fetch(`/api/endeavors/${encodeURIComponent(endeavorId)}/description`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description })
-      })
-      
-      if (!descResponse.ok) {
-        const error = await descResponse.json()
-        throw new Error(error.error || 'Failed to update description')
-      }
-      
-      // Redirect to the newly created endeavor
       window.location.href = `/endeavor/${encodeURIComponent(endeavorId)}`
     } else {
       // Update existing endeavor

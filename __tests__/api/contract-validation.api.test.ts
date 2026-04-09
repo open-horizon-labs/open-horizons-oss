@@ -68,7 +68,7 @@ describe('Contract Validation API Tests', () => {
       // Test invalid request data is caught by contract
       const invalidRequests = [
         { title: '', type: 'mission' }, // Empty title
-        { title: 'Test', type: 'invalid' }, // Invalid type
+        { title: 'Test', type: 'mission', parent_id: 'legacy-parent' }, // Unknown field
         { title: 'Test', type: 'mission', contextId: 123 }, // Wrong contextId type
         { title: 'Test'.repeat(100), type: 'mission' } // Title too long
       ]
