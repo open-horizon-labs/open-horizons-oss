@@ -115,7 +115,8 @@ Each tool works standalone. Together, they create a feedback loop: strategy flow
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | (set by Docker Compose) | PostgreSQL connection string |
-| `STRATEGY_PRESET` | `open-horizons` | Active node type hierarchy |
+| `STRATEGY_PRESET` | `open-horizons` | Active node type hierarchy (built-in or from `NODE_TYPES_FILE`) |
+| `NODE_TYPES_FILE` | (none) | Path to a JSON file of custom preset definitions (see below) |
 
 ### Configurable Node Type Hierarchy
 
@@ -144,6 +145,50 @@ Mission > Strategic Bet > Capability > Outcome Spec
 See [docs/node-types.md](docs/node-types.md) for API usage and custom type creation.
 
 For integrators, `GET /api/about` exposes the live create-time contract: canonical request field names, unknown-field rejection behavior, and the current valid type slugs derived from `node_types`.
+
+### Deploy-Time Node Type Seeding
+
+By default, Open Horizons seeds the four primitive types (`mission`, `aim`, `initiative`, `task`). To start with a different hierarchy:
+
+**Option 1: Use a built-in preset**
+```yaml
+# docker-compose.override.yml
+services:
+  app:
+    environment:
+      - STRATEGY_PRESET=agentic-flow
+```
+
+**Option 2: Define custom presets in a JSON file**
+
+Create a JSON file with named presets. Each preset is an array of node types using the same shape as `POST /api/node-types`:
+
+```json
+{
+  "strategic-planning": [
+    { "slug": "mission", "name": "Mission", "description": "...", "icon": "🎯", "color": "#7c3aed", "sort_order": 0 },
+    { "slug": "strategic_bet", "name": "Strategic Bet", "description": "...", "icon": "🎲", "color": "#dc2626", "sort_order": 1 }
+  ],
+  "product-ops": [
+    { "slug": "mission", "name": "Mission", "sort_order": 0 },
+    { "slug": "epic", "name": "Epic", "sort_order": 1 }
+  ]
+}
+```
+
+Then mount it and select a preset:
+```yaml
+# docker-compose.override.yml
+services:
+  app:
+    environment:
+      - STRATEGY_PRESET=strategic-planning
+      - NODE_TYPES_FILE=/app/config/node-types.json
+    volumes:
+      - ./node-types.json:/app/config/node-types.json:ro
+```
+
+**Resolution order:** `STRATEGY_PRESET` looks in `NODE_TYPES_FILE` first, then falls back to built-in presets. Seeding only runs on first startup — if you've already customized types via Settings, the seed is skipped.
 
 
 ## API

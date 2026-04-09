@@ -26,11 +26,6 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       href: '/settings/node-types',
       icon: 'N'
     },
-    {
-      name: 'Import Data',
-      href: '/settings/markdown-aims',
-      icon: 'I'
-    }
   ]
 
   return (
