@@ -1,6 +1,6 @@
 ---
 name: dev-pipeline
-description: Full dev pipeline from problem framing through merge. Ensures GitHub issue exists, explores solutions, executes, then ships.
+description: Full dev pipeline from problem framing through merge. Ensures GitHub issue exists, explores solutions, executes, then ships with review grounded in outcomes, metis, guardrails, and ADRs.
 tools: Read, Write, Edit, Grep, Glob, Bash, Agent, WebFetch, WebSearch
 mcpServers:
   - rna-mcp
@@ -36,6 +36,10 @@ Initialize at pipeline start:
 **Issue:** #<number> (or "pending")
 **PR:** (filled in Phase 2)
 **Started:** <timestamp>
+**Outcome:** <outcome-id or explicit justification for none>
+**Relevant Metis:** <paths or "none">
+**Relevant Guardrails:** <paths or "none">
+**Relevant ADRs:** <paths or "none">
 
 ## Phase 1: Problem Statement
 (filled by Phase 1)
@@ -84,24 +88,26 @@ Every issue must connect to a declared outcome. After creating/reading the issue
 
 ## Phase 2: Solution Space → PR Description
 
-**Goal:** Explore candidates and draft a PR.
+**Goal:** Explore candidates, draft a PR, and collect the alignment context the `ship` agent must review against.
 
 1. Generate 3-4 candidates (band-aid → redesign)
 2. Create feature branch and draft PR
-3. Update session file
+3. Identify and record the relevant outcome, metis, guardrails, and ADRs in the session file
+4. Update the PR description with the chosen solution and any alignment constraints or accepted trade-offs
 
-**Gate:** Do not proceed without a draft PR.
+**Gate:** Do not proceed without a draft PR and explicit alignment context recorded in the session file.
 
 ---
 
 ## Phase 3: Execute
 
-**Goal:** Implement the chosen solution.
+**Goal:** Implement the chosen solution without drifting from the recorded alignment context.
 
-1. Read session file for aim, problem, selected solution
+1. Read session file for aim, problem, selected solution, outcome, metis, guardrails, and ADRs
 2. Build in small increments, detect drift
-3. Push commits to PR branch
-4. Log to the OH strategy graph if creating decision records:
+3. If execution reveals a new durable learning or missing constraint, update the session file and record the metis/guardrail/ADR follow-up before handoff
+4. Push commits to PR branch
+5. Log to the OH strategy graph if creating decision records:
    ```bash
    curl -X POST http://localhost:3000/api/logs -H "Content-Type: application/json" \
      -d '{"entity_type":"endeavor","entity_id":"<id>","content":"<decision>"}'
@@ -113,12 +119,19 @@ Every issue must connect to a declared outcome. After creating/reading the issue
 
 ## Phase 4: Ship
 
-**Goal:** Quality gate and merge via the `ship` agent.
+**Goal:** Quality gate and merge via the `ship` agent, with review explicitly grounded in the session's outcome, metis, guardrails, and ADR context.
 
 > **CRITICAL: Spawn the ship agent. Do NOT inline the ship steps.**
 
+Before spawning `ship`, make sure the session file and PR description clearly capture:
+- linked outcome (or explicit justification for none)
+- relevant metis
+- relevant guardrails
+- relevant ADRs or ADR gap
+- accepted trade-offs from solution-space
+
 ```
-Agent(subagent_type="ship", prompt="/ship <PR-number>")
+Agent(subagent_type="ship", prompt="/ship <PR-number>\n\nSESSION FILE: .oh/sessions/<issue-number>-dev.md\nGround the review, dissent, merit, and follow-up decisions in the recorded outcome, metis, guardrails, and ADRs.")
 ```
 
 This launches the full 13-step pipeline as an autonomous agent.

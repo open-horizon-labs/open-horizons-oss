@@ -395,7 +395,7 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
         <div className="text-center py-8 text-gray-500">
           <div className="text-lg mb-4">No Mission Defined Yet</div>
           <div className="text-sm mb-4">
-            Start by defining your mission to give direction to your other endeavors, or import your existing aims.
+            Start by defining your mission to give direction to your other endeavors.
           </div>
           <div className="flex justify-center gap-3">
             <button
@@ -404,12 +404,6 @@ export function DashboardClient({ nodes, userId, today, contextId, onDataChange 
             >
               Create Mission
             </button>
-            <Link
-              href="/settings/markdown-aims"
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              Import Aims
-            </Link>
           </div>
         </div>
       ) : filteredNodes.length === 0 ? (
