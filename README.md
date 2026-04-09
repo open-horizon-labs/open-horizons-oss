@@ -20,6 +20,35 @@ For development with hot reload:
 docker compose -f docker-compose.dev.yml up
 ```
 
+## Resetting Local State
+
+Different Docker commands reset different layers of state. Use the one that matches the outcome you want:
+
+- **Restart the app** — containers stop/start, named Postgres volumes survive:
+
+  ```bash
+  docker compose down
+  docker compose up
+  ```
+
+- **Rebuild images** — images rebuild, named Postgres volumes still survive:
+
+  ```bash
+  docker compose down
+  docker compose build --no-cache
+  docker compose up
+  ```
+
+- **Clean slate reset** — containers stop and the named Postgres volumes are removed, so imported data and created endeavors are gone:
+
+  ```bash
+  docker compose down -v
+  docker compose up
+  ```
+
+`docker volume prune` only removes unused anonymous volumes. It does not reliably remove the named volumes declared by Open Horizons' Compose files. If you want a true database reset, use `docker compose down -v`.
+
+
 ## What is this?
 
 Open Horizons models your organization's strategy as a directed graph. Nodes represent units of work at different levels of abstraction -- missions, aims, initiatives -- and edges encode the relationships between them. The graph is displayed as a navigable tree, giving teams a shared view of how daily execution connects to strategic intent.
@@ -114,9 +143,14 @@ Mission > Strategic Bet > Capability > Outcome Spec
 
 See [docs/node-types.md](docs/node-types.md) for API usage and custom type creation.
 
+For integrators, `GET /api/about` exposes the live create-time contract: canonical request field names, unknown-field rejection behavior, and the current valid type slugs derived from `node_types`.
+
+
 ## API
 
 Full REST and MCP endpoint reference: [docs/mcp-setup.md](docs/mcp-setup.md)
+
+For live integration-time create details, call `GET /api/about`. It returns the canonical create request field names, whether unknown fields are rejected, and the current valid endeavor type slugs from `node_types`.
 
 ### Using with oh-mcp-server
 

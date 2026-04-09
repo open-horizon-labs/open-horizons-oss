@@ -39,6 +39,9 @@ A four-level hierarchy designed for AI-native workflows. Stops at outcome specif
 | Capability | `capability` | What we must be able to do |
 | Outcome Spec | `outcome_spec` | How we will know it works |
 
+For integrators creating endeavors, `GET /api/about` is the authoritative runtime source for the current create-time type slugs and canonical request field names. It reflects the live `node_types` table rather than a static preset description.
+
+
 ## Loading a Preset via API
 
 ```bash
